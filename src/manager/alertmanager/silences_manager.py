@@ -1,5 +1,6 @@
 import calendar
 import logging
+import traceback
 from datetime import datetime, timezone, timedelta
 
 from app.services.alertmanater import alertmanager_api
@@ -12,7 +13,7 @@ class SilencesManager:
     def get_silences(self):
         silences = alertmanager_api.get_silences()
 
-        silence_template = [
+        silence_blocks = [
             {
                 "type": "header",
                 "text": {
@@ -25,13 +26,13 @@ class SilencesManager:
 
         for silence in silences:
             if silence["status"]["state"] == "active":
-                silence_template.extend([
-                    self.make_template_body(silence),
+                silence_blocks.extend([
+                    self.make_block_silence(silence),
                     {"type": "divider"}
                 ])
-        return silence_template
+        return silence_blocks
 
-    def make_template_body(self, silence):
+    def make_block_silence(self, silence):
         return {
                 "type": "section",
                 "text": {
@@ -95,12 +96,12 @@ class SilencesManager:
 
             alertmanager_api.post_silences(body)
         except Exception as e:
-            logging.error(f"Create Silence Error: {e}")
+            logging.error(f"Create Silence Error - {traceback.format_exc()}")
             return f"❌ Silence 설정 처리 중 오류가 발생했습니다: \n{str(e)}"
 
         return "✅ Silence 설정이 성공적으로 처리되었습니다."
 
-    def silence_modal(self, blocks, action_value):
+    def open_modal_silence(self, blocks, action_value):
         block = self.extract_block(blocks, action_value)
         labels = block["text"]["text"]
         is_update, initial_values = self.extract_fields(block)
@@ -194,16 +195,13 @@ class SilencesManager:
 
         for label in labels.split('\n'):
             if label.strip():
-                try:
-                    key, value = label.split(":", 1)
-                    matchers.append({
-                        "name": key.strip(),
-                        "value": value.strip(),
-                        "isRegex": False,
-                        "isEqual": True
-                    })
-                except ValueError:
-                    logging.error(f"Label format Error: label - {label}")
+                key, value = label.split(":", 1)
+                matchers.append({
+                    "name": key.strip(),
+                    "value": value.strip(),
+                    "isRegex": False,
+                    "isEqual": True
+                })
         return matchers
 
     @staticmethod

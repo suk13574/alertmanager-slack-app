@@ -1,9 +1,10 @@
 import logging
+import traceback
 
 from flask import Blueprint, request, jsonify
 
 from app.services.slack_cilent import slack_api
-from src.manager.set_manager import SetManager
+from src.manager.alertmanager.set_manager import SetManager
 
 set_bp = Blueprint("set", __name__)
 set_manager = SetManager()
@@ -28,5 +29,5 @@ def set_alertmanager():
         slack_api.chat_post_message(text=message)
         return "", 200
     except Exception as e:
-        logging.error(f"Error - command /set: {e}")
+        logging.error(f"Command Error - command /set: {traceback.format_exc()}")
         return jsonify({"error": str(e)}), 500

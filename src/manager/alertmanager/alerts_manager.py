@@ -15,12 +15,12 @@ class AlertsManager:
 
             main_label = alert["labels"].get(self.main_label, '-')
             alert_template_body.setdefault(main_label, []).append(
-                self.make_template_body(alert["labels"], alert["fingerprint"]))
+                self.make_block_alert(alert["labels"], alert["fingerprint"]))
 
-        return self.make_alert_template(alert_template_body)
+        return self.make_block_alerts(alert_template_body)
 
     @staticmethod
-    def make_template_body(labels: dict, fingerprint: str):
+    def make_block_alert(labels: dict, fingerprint: str):
         label_str = [f"`{key}:{value}`\n" for key, value in labels.items()]
 
         return {
@@ -42,7 +42,7 @@ class AlertsManager:
         }
 
     @staticmethod
-    def make_alert_template(alert_templates: dict):
+    def make_block_alerts(alert_templates: dict):
         blocks = [{
             "type": "header",
             "text": {

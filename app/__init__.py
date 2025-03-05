@@ -1,12 +1,14 @@
 from flask import Flask
 
-from app.routes.alerts import alerts_bp
+from app.routes.alertmanager.alerts import alerts_bp
+from app.routes.grafana.dashbord import dashboard_bp
 from app.routes.interactions import interactions_bp
-from app.routes.silences import silences_bp
-from app.routes.set import set_bp
+from app.routes.alertmanager.silences import silences_bp
+from app.routes.alertmanager.set import set_bp
 
 from app.services.alertmanater import alertmanager_api
 from app.services.slack_cilent import slack_api
+from app.services.grafana import grafana_api
 
 from app.utils.config import Config
 from app.utils.logger import setup_logging
@@ -20,6 +22,7 @@ def create_app():
 
     # Setup config
     app.config.from_object(Config)
+    grafana_api.init_grafana(token=app.config.get("GRAFANA_TOKEN"), grafana_urls=app.config.get("GRAFANA_URLS"))
     alertmanager_api.init_alertmanager_urls(app.config.get("ALERTMANAGER_URLS"))
     slack_api.init_slack(token=app.config.get("SLACK_BOT_TOKEN"), channel=app.config.get("SLACK_CHANNEL_ID"))
 
@@ -28,5 +31,8 @@ def create_app():
     app.register_blueprint(silences_bp, url_prefix="/slack")
     app.register_blueprint(interactions_bp, url_prefix="/slack")
     app.register_blueprint(set_bp, url_prefix="/slack")
+
+    # grafana
+    app.register_blueprint(dashboard_bp, url_prefix="/slack/grafana")
 
     return app

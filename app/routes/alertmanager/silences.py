@@ -1,9 +1,10 @@
 import logging
+import traceback
 
 from flask import jsonify, Blueprint, request
 
 from app.services.slack_cilent import slack_api
-from src.manager.silences_manager import SilencesManager
+from src.manager.alertmanager.silences_manager import SilencesManager
 
 silences_bp = Blueprint("silences", __name__)
 silences_manager = SilencesManager()
@@ -27,5 +28,5 @@ def silences():
         slack_api.chat_post_message(text=f"silence list 조회", blocks=blocks)
         return "", 200
     except Exception as e:
-        logging.error(f"Error - command /silences: {e}")
+        logging.error(f"Command Error - command /silences: {traceback.format_exc()}")
         return jsonify({"error": str(e)}), 500

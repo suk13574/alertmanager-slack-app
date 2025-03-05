@@ -1,13 +1,17 @@
 import json
 import logging
+import traceback
+from threading import Thread
 
 from flask import Blueprint, request, jsonify
 
 from app.services.slack_cilent import slack_api
-from src.manager.silences_manager import SilencesManager
+from src.manager.grafana.dashboard_manager import DashboardManager
+from src.manager.alertmanager.silences_manager import SilencesManager
 
 interactions_bp = Blueprint("interactions", __name__)
 silences_manager = SilencesManager()
+dashboard_manager = DashboardManager()
 
 
 @interactions_bp.before_request
@@ -26,7 +30,7 @@ def log_request():
 def slack_interactions():
     payload = request.form.get("payload")
     if not payload:
-        logging.error(f"Error - interactions don't have payload: payload - {payload}")
+        logging.error(f"Slack Interaction Error - interactions don't have payload: payload - {traceback.format_exc()}")
         return jsonify({"error": "No payload provided"}), 400
 
     interaction_data = json.loads(payload)
@@ -37,7 +41,7 @@ def slack_interactions():
     elif interaction_type == "view_submission":
         return handle_view_submission(interaction_data)
 
-    logging.error(f"Error - unknown interaction_type: {interaction_type}")
+    logging.error(f"Slack Interaction Error - unknown interaction_type: {interaction_type}")
     return jsonify({"error": "Unknown interaction type"}), 400
 
 
@@ -47,19 +51,63 @@ def handle_block_actions(interaction_data):
 
     for action in actions:
         action_id = action["action_id"]
-        action_value = action["value"]
+        logging.info(f"block_actions id: {action_id}")
 
         if action_id == "silence_button":
+            action_value = action["value"]
             block = interaction_data["message"]["blocks"]
-            view = silences_manager.silence_modal(block, action_value)
+            view = silences_manager.open_modal_silence(block, action_value)
 
             try:
                 slack_api.open_view(trigger_id=trigger_id, view=view)
             except Exception as e:
-                logging.error(f"Error - creating the silence modal: {e}")
+                logging.error(f"Slack Interaction Error - creating the silence modal: {traceback.format_exc()}")
                 return jsonify({"error": str(e)}), 500
+        elif action_id == "grafana-ds-folder-static_select":
+            title = action["selected_option"]["text"]["text"]
+            folder_id = action["selected_option"]["value"]
+
+            try:
+                view_id = interaction_data["view"]["id"]
+                view_hash = interaction_data["view"]["hash"]
+                view = interaction_data["view"]
+                new_view = dashboard_manager.update_modal_dashboard(view, title, folder_id)
+                slack_api.update_view(view_id=view_id, view_hash=view_hash, view=new_view)
+                return "", 200
+            except Exception as e:
+                error_details = traceback.format_exc()
+                logging.error(f"Slack Interaction Error - block action({action_id}): {error_details}")
+                return jsonify({"error": str(e)}), 500
+        elif action_id == "grafana-dashboard-static_select":
+            try:
+                ds_url = action["selected_option"]["value"]
+                view_id = interaction_data["view"]["id"]
+                view_hash = interaction_data["view"]["hash"]
+                view = interaction_data["view"]
+                new_view = dashboard_manager.update_modal_panel(view, ds_url)
+
+                slack_api.update_view(view_id=view_id, view_hash=view_hash, view=new_view)
+            except Exception as e:
+                error_details = traceback.format_exc()
+                logging.error(f"Slack Interaction Error - block action({action_id}): {error_details}")
+                return jsonify({"error": str(e)}), 500
+
+        elif action_id == "grafana-var-job-static_select":
+            try:
+                selected_data = action["selected_option"]
+                view_id = interaction_data["view"]["id"]
+                view_hash = interaction_data["view"]["hash"]
+                view = interaction_data["view"]
+                new_view = dashboard_manager.update_modal_variables(view, selected_data)
+
+                slack_api.update_view(view_id=view_id, view_hash=view_hash, view=new_view)
+            except Exception as e:
+                error_details = traceback.format_exc()
+                logging.error(f"Slack Interaction Error - block action({action_id}): {error_details}")
+                return jsonify({"error": str(e)}), 500
+
         else:
-            logging.error(f"Error - unknown action_id: {action_id}")
+            logging.error(f"Slack Interaction Error - unknown action_id: {action_id}")
             return jsonify({"error": "Unknown action_id"}), 400
 
         return "", 200
@@ -67,6 +115,8 @@ def handle_block_actions(interaction_data):
 
 def handle_view_submission(interaction_data):
     callback_id = interaction_data["view"]["callback_id"]
+
+    logging.info(f"view_submission id: {callback_id}")
 
     if callback_id == "silence_modal":
         view = interaction_data["view"]
@@ -76,8 +126,29 @@ def handle_view_submission(interaction_data):
             slack_api.chat_post_message(text=message)
             return "", 200
         except Exception as e:
-            logging.error(f"Create Silence Error: {e}")
+            logging.error(f"Slack Interaction Error - During create silence: {traceback.format_exc()}")
+            return jsonify({"error": str(e)}), 500
+    elif callback_id == "ds_image_modal":
+        view = interaction_data["view"]
+
+        try:
+            def process_image_async():
+                is_success, result = dashboard_manager.create_dashboard_image(view)
+                if is_success:
+                    slack_api.upload_file(file=result,
+                                          filename="grafana_panel.png",
+                                          title="Grafana Panel Image 📊",
+                                          initial_comment="Here is the Grafana panel image.")
+                else:
+                    slack_api.chat_post_message(text=result)
+
+            # 비동기 스레드 시작
+            Thread(target=process_image_async).start()
+            return "", 200
+        except Exception as e:
+            logging.error(f"Slack Interaction Error - During create dashboard image: {traceback.format_exc()}")
             return jsonify({"error": str(e)}), 500
 
-    logging.error(f"Error - unknown callback_id: {callback_id}")
-    return jsonify({"error": "Unknown callback_id"}), 400
+    else:
+        logging.error(f"Slack Interaction Error - unknown callback_id: {callback_id}")
+        return jsonify({"error": "Unknown callback_id"}), 400

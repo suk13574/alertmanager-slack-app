@@ -1,3 +1,3 @@
-from src.manager.alertmanager_api import AlertmanagerAPI
+from src.manager.alertmanager.alertmanager_api import AlertmanagerAPI
 
 alertmanager_api = AlertmanagerAPI()
