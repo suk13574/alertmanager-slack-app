@@ -8,16 +8,16 @@ class GrafanaAPI:
         self.endpoint = None
         self.token = None
 
-    def init_grafana(self, token, grafana_urls, endpoint="dev"):
-        self.token = token
-
+    def init_grafana(self, grafana_urls, endpoint="dev"):
         self.grafana_urls = grafana_urls
         self.set_endpoint(endpoint)
 
     def set_endpoint(self, endpoint: str):
         if endpoint not in self.grafana_urls.keys():
             return False
-        self.endpoint = self.grafana_urls.get(endpoint)
+
+        self.endpoint = self.grafana_urls.get(endpoint).get("url")
+        self.token = self.grafana_urls.get(endpoint).get("token")
         return True
 
     def _request(self, verb, url, body={}, header={}):
