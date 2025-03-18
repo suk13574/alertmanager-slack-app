@@ -2,7 +2,7 @@ from flask import Flask
 
 from app.routes.alertmanager.alerts import alerts_bp
 from app.routes.grafana.dashbord import dashboard_bp
-from app.routes.interactions import interactions_bp
+from app.routes.slack.interactions import interactions_bp
 from app.routes.alertmanager.silences import silences_bp
 from app.routes.alertmanager.set import set_bp
 

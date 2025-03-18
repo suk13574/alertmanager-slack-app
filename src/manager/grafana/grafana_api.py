@@ -21,7 +21,7 @@ class GrafanaAPI:
         return True
 
     def _request(self, verb, url, body={}, header={}):
-        logging.info(f"[Request Alertmanager] URL: {url}, verb: {verb}")
+        logging.info(f"[Request Grafana] URL: {url}, verb: {verb}")
 
         header["Authorization"] = f"Bearer {self.token}"
         header.setdefault("Content-Type", "application/json")

@@ -6,12 +6,12 @@ from threading import Thread
 from flask import Blueprint, request, jsonify
 
 from app.services.slack_cilent import slack_api
-from src.manager.grafana.dashboard_manager import DashboardManager
+from src.manager.grafana.panel_image_manager import PanelImageManager
 from src.manager.alertmanager.silences_manager import SilencesManager
 
 interactions_bp = Blueprint("interactions", __name__)
 silences_manager = SilencesManager()
-dashboard_manager = DashboardManager()
+dashboard_manager = PanelImageManager()
 
 
 @interactions_bp.before_request

@@ -4,10 +4,10 @@ import traceback
 from flask import Blueprint, request, jsonify
 
 from app.services.slack_cilent import slack_api
-from src.manager.grafana.dashboard_manager import DashboardManager
+from src.manager.grafana.panel_image_manager import PanelImageManager
 
 dashboard_bp = Blueprint("dashboard", __name__)
-dashboard_manager = DashboardManager()
+dashboard_manager = PanelImageManager()
 
 
 @dashboard_bp.before_request

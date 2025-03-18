@@ -5,7 +5,7 @@ import logging
 import traceback
 
 
-class DashboardManager:
+class PanelImageManager:
     def __init__(self):
         pass
 
