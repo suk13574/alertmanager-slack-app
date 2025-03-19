@@ -66,12 +66,12 @@ class PanelImageManager:
 
     def update_modal_variables(self, view, selected_data):
         job = selected_data["text"]["text"]
-        if job == "none":
-            return self.update_modal(view, [], view["blocks"])  # 변경 없음
-        label_info = eval(selected_data["value"])
-
         required_blocks = ["grafana_folder_block", "grafana_dashboard_block", "grafana_time_from_block",
                            "grafana_panel_block", "divider_block", "header_block", "grafana_var_job_block"]
+        if job == "none":
+            return self.update_modal(view, required_blocks, [])  # 변경 없음
+        label_info = eval(selected_data["value"])
+
         return self.update_modal(view, required_blocks,
                                  self.make_blocks_var_instance(job, label_info["ds_uid"], label_info["name"]))
 
