@@ -1,6 +1,10 @@
 from functools import lru_cache
 
+import requests
+
 from app.services.grafana import grafana_api
+from app.services.slack_cilent import slack_api
+
 import logging
 import traceback
 
@@ -73,7 +77,15 @@ class PanelImageManager:
 
     @staticmethod
     def make_block_folder():
-        res = grafana_api.list_dash_folder()
+        try:
+            res = grafana_api.list_dash_folder()
+        except requests.HTTPError as e:
+            if "Unauthorized" in e.args[0]:
+                slack_api.chat_post_message("❌ Grafana Token Error - Grafana 접근 권한이 없습니다.")
+            else:
+                slack_api.chat_post_message("❌ Grafana API 호출 중 에러가 발생했습니다.")
+            raise requests.HTTPError
+
         options = [{
             "text": {
                 "type": "plain_text",
