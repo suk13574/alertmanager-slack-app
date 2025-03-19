@@ -67,7 +67,7 @@ class PanelImageManager:
     def update_modal_variables(self, view, selected_data):
         job = selected_data["text"]["text"]
         if job == "none":
-            return view  # 변경 없음
+            return self.update_modal(view, [], view["blocks"])  # 변경 없음
         label_info = eval(selected_data["value"])
 
         required_blocks = ["grafana_folder_block", "grafana_dashboard_block", "grafana_time_from_block",
@@ -322,7 +322,7 @@ class PanelImageManager:
 
     def make_blocks_var_instance(self, job, ds_uid, label_name):
         label_value = self.get_label_value(ds_uid, job)
-        values = list(label_value.get(label_name))
+        values = list(label_value.get(label_name, []))
 
         options = [{
                     "text": {
@@ -361,7 +361,7 @@ class PanelImageManager:
         variables = res.get("dashboard", {}).get("templating", {}).get("list", [])
         for var in variables:
             if var.get("name", "").lower() == "job" and var.get("type") == "custom":
-                jobs.extend(option["text"] for option in var.get("options", []))
+                jobs.extend(option["text"] for option in var.get("options", []) if option["text"].lower() != "all")
                 var_job_name = var["name"]
             elif "instance" in var.get("name", "").lower() and var.get("query", {}).get("query", "").startswith("label_values"):
                 var_instance_name = var["name"]
