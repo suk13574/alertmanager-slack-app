@@ -1,4 +1,6 @@
 import logging
+from functools import lru_cache
+
 import requests
 
 
@@ -64,6 +66,7 @@ class GrafanaAPI:
 
         return self._request(verb, url).json()
 
+    @lru_cache(maxsize=500)
     def get_dashboard(self, uid):
         verb = "get"
         path = f"/api/dashboards/uid/{uid}"
@@ -94,3 +97,11 @@ class GrafanaAPI:
 
         return self._request(verb, url, body, header).json()
 
+    def query_label_value(self, ds_uid, label_query):
+        verb = "get"
+        path = f"/api/datasources/uid/{ds_uid}/resources/api/v1/query"
+        query = f"?query={label_query}"
+
+        url = f"{self.endpoint}{path}{query}"
+
+        return self._request(verb, url).json()
