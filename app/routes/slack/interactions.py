@@ -92,7 +92,7 @@ def handle_block_actions(interaction_data):
                 logging.error(f"Slack Interaction Error - block action({action_id}): {error_details}")
                 return jsonify({"error": str(e)}), 500
 
-        elif action_id == "grafana-var-job-static_select":
+        elif action_id == "is_variables_radio_button":
             try:
                 selected_data = action["selected_option"]
                 view_id = interaction_data["view"]["id"]
@@ -101,9 +101,26 @@ def handle_block_actions(interaction_data):
                 new_view = dashboard_manager.update_modal_variables(view, selected_data)
 
                 slack_api.update_view(view_id=view_id, view_hash=view_hash, view=new_view)
+
             except Exception as e:
-                error_details = traceback.format_exc()
-                logging.error(f"Slack Interaction Error - block action({action_id}): {error_details}")
+                logging.error(f"Slack Interaction Error - block action({action_id}): {traceback.format_exc()}")
+                return jsonify({"error": str(e)}), 500
+
+        elif action_id.startswith("custom_var_radio_button"):
+            try:
+                custom_var_name = action_id.split("_")[-1]
+
+                selected_data = action["selected_option"]
+                view_id = interaction_data["view"]["id"]
+                view_hash = interaction_data["view"]["hash"]
+                view = interaction_data["view"]
+
+                new_view = dashboard_manager.update_modal_query_var(view, selected_data, custom_var_name)
+
+                slack_api.update_view(view_id=view_id, view_hash=view_hash, view=new_view)
+
+            except Exception as e:
+                logging.error(f"Slack Interaction Error - block action({action_id}): {traceback.format_exc()}")
                 return jsonify({"error": str(e)}), 500
 
         else:

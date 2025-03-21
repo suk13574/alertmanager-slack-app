@@ -1,3 +1,5 @@
+import json
+import re
 from functools import lru_cache
 
 import requests
@@ -47,7 +49,6 @@ class PanelImageManager:
                 "type": "plain_text",
                 "text": "Submit"
             }
-
         return new_view
 
     def update_modal_dashboard(self, view, title, folder_id):
@@ -61,19 +62,121 @@ class PanelImageManager:
 
         required_blocks = ["grafana_folder_block", "grafana_dashboard_block"]
 
-        return self.update_modal(view, required_blocks, self.make_blocks_panel(res) + self.make_blocks_var_job(res),
-                                 is_submit=True)
+        return self.update_modal(view, required_blocks,
+                                 self.make_blocks_panel(res) + self.make_block_is_var(dashboard_uid), is_submit=True)
 
     def update_modal_variables(self, view, selected_data):
-        job = selected_data["text"]["text"]
+        value = selected_data["value"]
         required_blocks = ["grafana_folder_block", "grafana_dashboard_block", "grafana_time_from_block",
-                           "grafana_panel_block", "divider_block", "header_block", "grafana_var_job_block"]
-        if job == "none":
-            return self.update_modal(view, required_blocks, [])  # 변경 없음
-        label_info = eval(selected_data["value"])
+                           "grafana_panel_block", "grafana_is_var_block"]
 
-        return self.update_modal(view, required_blocks,
-                                 self.make_blocks_var_instance(job, label_info["ds_uid"], label_info["name"]))
+        if value == "no":
+            return self.update_modal(view, required_blocks, [])
+
+        custom_vars, query_vars = self.extract_vars(value)
+
+        query_blocks = []
+        for query_var in query_vars:
+            label_values = self.get_label_value(query_var["ds_uid"], query_var["query"])
+            query_blocks.append(self.make_block_query_vars(label_values.get(query_var["label_name"], []), query_var))
+
+        return self.update_modal(view, required_blocks, self.make_block_custom_vars(custom_vars) + query_blocks)
+
+    def update_modal_query_var(self, view, selected_data, custom_var_name):
+        custom_var_value = selected_data.get("value")
+
+        query_var_blocks = []
+        required_blocks = []
+
+        for block in view["blocks"]:
+            if block["block_id"].startswith("grafana_query_var_"):
+                query_var = eval(block.get("element", {}).get("options", [])[0].get("value", "{}"))
+                if custom_var_name in query_var.get("query", ""):
+                    new_query = self.substitute_variables(query_var["query"], {custom_var_name: custom_var_value})
+                    query_var_values = self.get_label_value(query_var["ds_uid"], new_query)
+
+                    new_block = self.make_block_query_vars(query_var_values.get(query_var.get("label_name"), []), query_var)
+                    query_var_blocks.append(new_block)
+                else:
+                    query_var_blocks.append(block)
+            else:
+                required_blocks.append(block["block_id"])
+
+        return self.update_modal(view, required_blocks, query_var_blocks)
+
+    @staticmethod
+    def make_block_custom_vars(custom_vars: list):
+        blocks = []
+
+        for custom_var in custom_vars:
+            var_name = custom_var.get("var_name")
+            var_values = custom_var.get("var_values", [])
+
+            options = [{
+                "value": var_value,
+                "text": {
+                    "type": "plain_text",
+                    "text": var_value
+                }
+            } for var_value in var_values]
+
+            blocks.append({
+                "type": "section",
+                "block_id": f"grafana_custom_var_{var_name}_block",
+                "text": {
+                    "type": "plain_text",
+                    "text": f"(Optional) Choose {var_name}"
+                },
+                "accessory": {
+                    "type": "radio_buttons",
+                    "action_id": f"custom_var_radio_button_{var_name}",
+                    "options": options
+                }
+            })
+
+        return blocks
+
+    @staticmethod
+    def make_block_query_vars(query_var_values, query_var):
+        # options 만들기
+        options = [{
+            "text": {
+                "type": "plain_text",
+                "text": query_var_value
+            },
+            "value": str(query_var)
+        } for query_var_value in query_var_values]
+
+        if not options:
+            options = [{
+                "text": {
+                    "type": "plain_text",
+                    "text": "none"
+                },
+                "value": str(query_var)
+            }]
+
+        ver_name = query_var.get("var_name")
+
+        # block 만들기
+        return {
+            "type": "input",
+            "block_id": f"grafana_query_var_{ver_name}_block",
+            "optional": True,
+            "label": {
+                "type": "plain_text",
+                "text": f"Select label - {ver_name}"
+            },
+            "element": {
+                "type": "multi_static_select",
+                "action_id": f"grafana_var_multi_select_block_{ver_name}",
+                "placeholder": {
+                    "type": "plain_text",
+                    "text": "Select options"
+                },
+                "options": options
+            }
+        }
 
     @staticmethod
     def make_block_folder():
@@ -237,6 +340,48 @@ class PanelImageManager:
         return blocks
 
     @staticmethod
+    def make_block_is_var(dashboard_uid):
+        return [{
+            "type": "section",
+            "block_id": "grafana_is_var_block",
+            "text": {
+                "type": "plain_text",
+                "text": "need variables?"
+            },
+            "accessory": {
+                "type": "radio_buttons",
+                "action_id": "is_variables_radio_button",
+                "initial_option": {
+                    "value": "no",
+                    "text": {
+                        "type": "plain_text",
+                        "text": "no"
+                    }
+                },
+                "options": [
+                    {
+                        "value": "no",
+                        "text": {
+                            "type": "plain_text",
+                            "text": "no"
+                        }
+                    },
+                    {
+                        "value": dashboard_uid,
+                        "text": {
+                            "type": "plain_text",
+                            "text": "yes"
+                        },
+                        "description": {
+                            "type": "mrkdwn",
+                            "text": "choose variables (e.g. instnace_name)"
+                        }
+                    }
+                ]
+            }
+        }]
+
+    @staticmethod
     def create_dashboard_image(view):
         try:
             state_values = view["state"]["values"]
@@ -247,19 +392,22 @@ class PanelImageManager:
             dashboard_uid = dashboard_url.split("/")[2:][0]
             dashboard_name = dashboard_url.split("/")[2:][1]
 
-            add_query = None
-            job_block = state_values.get("grafana_var_job_block", {}).get("grafana-var-job-static_select")
-            job = job_block["selected_option"]["text"]["text"]
-
-            if job != "none":
-                job_value = eval(job_block["selected_option"]["value"])
-                selected_instances = (state_values.get("grafana_var_instance_block", {})
-                                      .get("grafana-var-instance-multi_select_block").get("selected_options", []))
-                var_job_name = job_value.get("var_job_name")
-                var_instance_name = job_value.get("var_instance_name")
-
-                add_query = f"&var-{var_job_name}={job}"
-                add_query += "".join(f"&var-{var_instance_name}={inst['value']}" for inst in selected_instances)
+            add_query = ""
+            for block_id in state_values.keys():
+                if block_id.startswith("grafana_custom_var"):
+                    label_name = block_id.replace("grafana_custom_var_", "").replace("_block", "")
+                    selected_value = state_values[block_id].get(f"custom_var_radio_button_{label_name}", None)
+                    if selected_value:
+                        label_value = selected_value["selected_option"]["value"]
+                        add_query += f"&var-{label_name}={label_value}"
+                elif block_id.startswith("grafana_query_var"):
+                    label_name = block_id.replace("grafana_query_var_", "").replace("_block", "")
+                    selected_value = state_values[block_id].get(f"grafana_var_multi_select_block_{label_name}", None)
+                    if selected_value:
+                        for selected_option in selected_value.get("selected_options", []):
+                            label_value = selected_option.get("text", {}).get("text", None)
+                            if label_value and label_value != "none":
+                                add_query += f"&var-{label_name}={label_value}"
 
             res = grafana_api.redner_image(dashboard_uid, dashboard_name, time_from, "now", panel_id, add_query)
 
@@ -268,126 +416,70 @@ class PanelImageManager:
             logging.error(f"[Grafana] Error in create_dashboard_image: {traceback.format_exc()}")
             return False, f"❌ grafana dashboard image 생성 중 오류 발생: {str(e)}"
 
-    def make_blocks_var_job(self, res):
-        jobs, var_info = self.extract_var_instance(res)
+    @staticmethod
+    def extract_vars(dashboard_uid):
+        res = grafana_api.get_dashboard(dashboard_uid)
+        variables = res.get("dashboard", {}).get("templating", {}).get("list", [])
 
-        job_options = [{
-            "text": {
-                "type": "plain_text",
-                "text": job,
-            },
-            "value": "none" if job == "none" else str(var_info)
-        } for job in jobs]
+        custom_vars = []
+        query_vars = []
 
-        blocks = [
-            {
-                "type": "divider",
-                "block_id": "divider_block"
-            },
-            {
-                "type": "header",
-                "block_id": "header_block",
-                "text": {
-                    "type": "plain_text",
-                    "text": "(Optaion) variables select",
-                }
-            },
-            {
-                "type": "context",
-                "elements": [
-                    {
-                        "type": "plain_text",
-                        "text": "If you don’t want to select a variable, pick 'none'."
-                    }
-                ]
-            },
-            {
-                "type": "actions",
-                "block_id": "grafana_var_job_block",
-                "elements": [{
-                    "type": "radio_buttons",
-                    "options": job_options,
-                    "initial_option": {
-                        "text": {
-                            "type": "plain_text",
-                            "text": "none"
-                        },
-                        "value": "none"
-                    },
-                    "action_id": "grafana-var-job-static_select"
-                }],
-            }
-        ]
-        return blocks
+        for var in variables:
+            if var.get("type") == "custom":
+                var_name = var.get("name", "")
+                current_value = var.get("current", {}).get("text")
+                var_values = [option.get("text") for option in var.get("options", [])]
+                custom_vars.append({
+                    "var_name": var_name,
+                    "current_value": current_value,
+                    "var_values": var_values
+                })
 
-    def make_blocks_var_instance(self, job, ds_uid, label_name):
-        label_value = self.get_label_value(ds_uid, job)
-        values = list(label_value.get(label_name, []))
+            elif var.get("type") == "query" and var.get("definition", "").startswith("label_values"):
+                var_name = var.get("name", "")
+                ds_uid = var["datasource"]["uid"]
+                query = var["definition"]
 
-        options = [{
-                    "text": {
-                        "type": "plain_text",
-                        "text": value
-                    },
-                    "value": value
-                }for value in values]
+                query_split = query.replace("label_values", "").replace("(", "").replace(")", "").split(",")
+                label_name = query_split[-1].strip()
+                query = query_split[0] if len(query_split) == 2 else "none"
 
-        return [{
-            "type": "input",
-            "block_id": f"grafana_var_instance_block",
-            "optional": True,
-            "label": {
-                "type": "plain_text",
-                "text": f"Select label - label_name"
-            },
-            "element": {
-                "type": "multi_static_select",
-                "action_id": f"grafana-var-instance-multi_select_block",
-                "placeholder": {
-                    "type": "plain_text",
-                    "text": "Select options"
-                },
-                "options": options
-            }
-        }]
+                query_vars.append({
+                    "var_name": var_name,
+                    "ds_uid": ds_uid,
+                    "label_name": label_name,
+                    "query": query
+                })
+
+        return custom_vars, query_vars
 
     @staticmethod
-    def extract_var_instance(res: dict):
-        var_job_name = ""
-        var_instance_name = ""
-        jobs = ["none"]
-        var_info = {}
+    def substitute_variables(query: str, variables: dict) -> str:
+        """문자열에서 $변수명을 찾아서 변수 값으로 치환하는 함수"""
 
-        variables = res.get("dashboard", {}).get("templating", {}).get("list", [])
-        for var in variables:
-            if var.get("name", "").lower() == "job" and var.get("type") == "custom":
-                jobs.extend(option["text"] for option in var.get("options", []) if option["text"].lower() != "all")
-                var_job_name = var["name"]
-            elif "instance" in var.get("name", "").lower() and var.get("query", {}).get("query", "").startswith("label_values"):
-                var_instance_name = var["name"]
-                ds_uid = var["datasource"]["uid"]
-                label_name = var["query"]["query"].replace("label_values", "").replace("(", "").replace(")", "").split(",")[-1].strip()
+        # 정규 표현식: `$` 다음에 나오는 영숫자 및 `_`을 변수명으로 인식
+        pattern = re.compile(r'\$(\w+)')
 
-                var_info = {"ds_uid": ds_uid, "name": label_name}
+        def replacer(match):
+            var_name = match.group(1)  # 변수명 ($ 없이)
+            return variables.get(var_name, match.group(0))  # 변수가 없으면 원래 값 유지
 
-        var_info["var_job_name"] = var_job_name
-        var_info["var_instance_name"] = var_instance_name
-        return jobs, var_info
+        return pattern.sub(replacer, query)
 
     @staticmethod
     @lru_cache(maxsize=500)
-    def get_label_value(ds_uid, job_name):
-        label_filter = f"up{{job=\"{job_name}\"}}"
-        res = grafana_api.list_label_value(ds_uid, label_filter)
+    def get_label_value(ds_uid, query):
+        res = grafana_api.query_label_value(ds_uid, query)
 
         if res.get("status") != "success":
-            logging.error(f"[grafana] dashboard의 variable을 불러오는데 실패했습니다. ds_uid={ds_uid}, lable_filter={label_filter}"
-                          f"F \n traceback.format_exc()")
+            logging.error(f"[grafana] dashboard의 variable을 불러오는데 실패했습니다. ds_uid={ds_uid}, query={query}"
+                          f"\n {traceback.format_exc()}")
             raise Exception
 
         label_values = {}
-        for data in res.get("data", []):
-            for label_name in data.keys() - {"__name__", "job"}:
-                label_values.setdefault(label_name, set()).add(data[label_name])
+        for result in res.get("data", {}).get("result", []):
+            metric = result.get("metric", {})
+            for label_name in metric.keys() - {"__name__"}:
+                label_values.setdefault(label_name, set()).add(metric[label_name])
 
         return label_values
