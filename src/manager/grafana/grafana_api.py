@@ -10,7 +10,7 @@ class GrafanaAPI:
         self.endpoint = None
         self.token = None
 
-    def init_grafana(self, grafana_urls, endpoint="scp"):
+    def init_grafana(self, grafana_urls, endpoint="dev"):
         self.grafana_urls = grafana_urls
         self.set_endpoint(endpoint)
 

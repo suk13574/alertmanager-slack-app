@@ -8,7 +8,7 @@ class AlertmanagerAPI:
         self.alertmanager_urls = {}
         self.endpoint = None
 
-    def init_alertmanager_urls(self, alertmanager_urls, endpoint="k-mon01"):
+    def init_alertmanager_urls(self, alertmanager_urls, endpoint="dev"):
         self.alertmanager_urls = alertmanager_urls
         self.set_endpoint(endpoint)
 
