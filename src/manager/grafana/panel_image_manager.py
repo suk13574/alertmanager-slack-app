@@ -1,4 +1,3 @@
-import json
 import re
 from functools import lru_cache
 
@@ -15,7 +14,7 @@ class PanelImageManager:
     def __init__(self):
         pass
 
-    def open_modal_ds_image(self):
+    def open_modal_ds_image(self) -> dict:
         return {
             "type": "modal",
             "callback_id": "ds_image_modal",
@@ -30,7 +29,7 @@ class PanelImageManager:
             "blocks": self.make_block_folder()
         }
 
-    def update_modal(self, view, required_blocks, additional_blocks, is_submit=False):
+    def update_modal(self, view: dict, required_blocks: list, additional_blocks: list, is_submit=False) -> dict:
         """기존 블록을 유지하면서 추가 블록을 삽입"""
         base_blocks = [b for b in view["blocks"] if b["block_id"] in required_blocks]
         new_view = {
@@ -51,12 +50,12 @@ class PanelImageManager:
             }
         return new_view
 
-    def update_modal_dashboard(self, view, title, folder_id):
+    def update_modal_dashboard(self, view: dict, title: str, folder_id: str) -> dict:
         required_blocks = ["grafana_folder_block"]
 
         return self.update_modal(view, required_blocks, self.make_block_dashboard(title, folder_id))
 
-    def update_modal_panel(self, view, dashboard_url):
+    def update_modal_panel(self, view: dict, dashboard_url: str) -> dict:
         dashboard_uid = dashboard_url.split("/")[2]
         res = grafana_api.get_dashboard(dashboard_uid)
 
@@ -65,7 +64,7 @@ class PanelImageManager:
         return self.update_modal(view, required_blocks,
                                  self.make_blocks_panel(res) + self.make_block_is_var(dashboard_uid), is_submit=True)
 
-    def update_modal_variables(self, view, selected_data):
+    def update_modal_variables(self, view: dict, selected_data: dict) -> dict:
         value = selected_data["value"]
         required_blocks = ["grafana_folder_block", "grafana_dashboard_block", "grafana_time_from_block",
                            "grafana_panel_block", "grafana_is_var_block"]
@@ -82,7 +81,7 @@ class PanelImageManager:
 
         return self.update_modal(view, required_blocks, self.make_block_custom_vars(custom_vars) + query_blocks)
 
-    def update_modal_query_var(self, view, selected_data, custom_var_name):
+    def update_modal_query_var(self, view: dict, selected_data: dict, custom_var_name: str) -> dict:
         custom_var_value = selected_data.get("value")
 
         query_var_blocks = []
@@ -105,7 +104,7 @@ class PanelImageManager:
         return self.update_modal(view, required_blocks, query_var_blocks)
 
     @staticmethod
-    def make_block_custom_vars(custom_vars: list):
+    def make_block_custom_vars(custom_vars: list) -> list:
         blocks = []
 
         for custom_var in custom_vars:
@@ -137,7 +136,7 @@ class PanelImageManager:
         return blocks
 
     @staticmethod
-    def make_block_query_vars(query_var_values, query_var):
+    def make_block_query_vars(query_var_values: list, query_var: dict) -> dict:
         # options 만들기
         options = [{
             "text": {
@@ -179,7 +178,7 @@ class PanelImageManager:
         }
 
     @staticmethod
-    def make_block_folder():
+    def make_block_folder() -> list:
         try:
             res = grafana_api.list_dash_folder()
         except requests.HTTPError as e:
@@ -228,7 +227,7 @@ class PanelImageManager:
         return blocks
 
     @staticmethod
-    def make_block_dashboard(title, folder_id):
+    def make_block_dashboard(title:str, folder_id:str) -> list:
         res = grafana_api.list_dash_in_folder(int(folder_id))
         options = []
         for dashboard in res:
@@ -262,7 +261,7 @@ class PanelImageManager:
         return blocks
 
     @staticmethod
-    def make_blocks_panel(res: dict):
+    def make_blocks_panel(res: dict) -> list:
         def create_option(panel):
             return {
                 "text": {
@@ -340,7 +339,7 @@ class PanelImageManager:
         return blocks
 
     @staticmethod
-    def make_block_is_var(dashboard_uid):
+    def make_block_is_var(dashboard_uid: str) -> list:
         return [{
             "type": "section",
             "block_id": "grafana_is_var_block",
@@ -382,7 +381,7 @@ class PanelImageManager:
         }]
 
     @staticmethod
-    def create_dashboard_image(view):
+    def create_dashboard_image(view: dict):
         try:
             state_values = view["state"]["values"]
 
@@ -397,7 +396,7 @@ class PanelImageManager:
                 if block_id.startswith("grafana_custom_var"):
                     label_name = block_id.replace("grafana_custom_var_", "").replace("_block", "")
                     selected_value = state_values[block_id].get(f"custom_var_radio_button_{label_name}", None)
-                    if selected_value:
+                    if selected_value.get("selected_option", None):
                         label_value = selected_value["selected_option"]["value"]
                         add_query += f"&var-{label_name}={label_value}"
                 elif block_id.startswith("grafana_query_var"):
@@ -417,7 +416,7 @@ class PanelImageManager:
             return False, f"❌ grafana dashboard image 생성 중 오류 발생: {str(e)}"
 
     @staticmethod
-    def extract_vars(dashboard_uid):
+    def extract_vars(dashboard_uid: str) -> list:
         res = grafana_api.get_dashboard(dashboard_uid)
         variables = res.get("dashboard", {}).get("templating", {}).get("list", [])
 
@@ -468,11 +467,11 @@ class PanelImageManager:
 
     @staticmethod
     @lru_cache(maxsize=500)
-    def get_label_value(ds_uid, query):
+    def get_label_value(ds_uid: str, query: str) -> dict:
         res = grafana_api.query_label_value(ds_uid, query)
 
         if res.get("status") != "success":
-            logging.error(f"[grafana] dashboard의 variable을 불러오는데 실패했습니다. ds_uid={ds_uid}, query={query}"
+            logging.error(f"[grafana] Failed to get the dashboard variable. ds_uid={ds_uid}, query={query}"
                           f"\n {traceback.format_exc()}")
             raise Exception
 
