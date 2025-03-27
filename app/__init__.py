@@ -1,5 +1,6 @@
 from flask import Flask
 
+from app.routes.health.health import health_bp
 from app.routes.slack.interactions import interactions_bp
 from app.routes.alertmanager.alerts import alerts_bp
 from app.routes.alertmanager.silences import silences_bp
@@ -31,12 +32,15 @@ def create_app():
     app.register_blueprint(interactions_bp, url_prefix="/slack")
 
     # alertmanager
-    app.register_blueprint(alerts_bp, url_prefix="/slack")
-    app.register_blueprint(silences_bp, url_prefix="/slack")
-    app.register_blueprint(set_alert_bp, url_prefix="/slack")
+    app.register_blueprint(alerts_bp, url_prefix="/slack/am")
+    app.register_blueprint(silences_bp, url_prefix="/slack/am")
+    app.register_blueprint(set_alert_bp, url_prefix="/slack/am")
 
     # grafana
     app.register_blueprint(dashboard_bp, url_prefix="/slack/grafana")
     app.register_blueprint(set_grafana_bp, url_prefix="/slack/grafana")
+
+    # main
+    app.register_blueprint(health_bp)
 
     return app
