@@ -416,7 +416,7 @@ class PanelImageManager:
             return False, f"❌ grafana dashboard image 생성 중 오류 발생: {str(e)}"
 
     @staticmethod
-    def extract_vars(dashboard_uid: str) -> list:
+    def extract_vars(dashboard_uid: str):
         res = grafana_api.get_dashboard(dashboard_uid)
         variables = res.get("dashboard", {}).get("templating", {}).get("list", [])
 
@@ -436,19 +436,20 @@ class PanelImageManager:
 
             elif var.get("type") == "query" and var.get("definition", "").startswith("label_values"):
                 var_name = var.get("name", "")
-                ds_uid = var["datasource"]["uid"]
-                query = var["definition"]
+                if var.get("datasource", None) and var.get("definition", None):
+                    ds_uid = var["datasource"]["uid"]
+                    query = var["definition"]
 
-                query_split = query.replace("label_values", "").replace("(", "").replace(")", "").split(",")
-                label_name = query_split[-1].strip()
-                query = query_split[0] if len(query_split) == 2 else "none"
+                    query_split = query.replace("label_values", "").replace("(", "").replace(")", "").split(",")
+                    label_name = query_split[-1].strip()
+                    query = query_split[0] if len(query_split) == 2 else "none"
 
-                query_vars.append({
-                    "var_name": var_name,
-                    "ds_uid": ds_uid,
-                    "label_name": label_name,
-                    "query": query
-                })
+                    query_vars.append({
+                        "var_name": var_name,
+                        "ds_uid": ds_uid,
+                        "label_name": label_name,
+                        "query": query
+                    })
 
         return custom_vars, query_vars
 
