@@ -309,6 +309,13 @@ class PanelImageManager:
                                 "text": "1d"
                             },
                             "value": "now-1d"
+                        },
+                        {
+                            "text": {
+                                "type": "plain_text",
+                                "text": "7d"
+                            },
+                            "value": "now-7d"
                         }
                     ],
                     "action_id": "time_radio_button"
