@@ -28,7 +28,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4 
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.USER_TOKEN }}
    
       - name: Login to NCR
         uses: docker/login-action@v3
@@ -41,4 +41,4 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: ${{ secrets.NCR }}/${{ secrets.NCR_REPOSITORY }}:${{ needs.tag.outputs.tag }}
+          tags: ${{ secrets.NCR }}/slack-app:${{ needs.tag.outputs.tag }}
