@@ -16,9 +16,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
                   
-      - name: Set version with TIMESTAMP
+      - name: Set version with Git commit hash
         id: tag
-        run: echo "TAG=$(date +%s)" >> "$GITHUB_OUTPUT"
+        run: echo "TAG=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
 
   ncr:
     runs-on: ubuntu-latest
@@ -41,4 +41,6 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: ${{ secrets.NCR }}/slack-app:${{ needs.tag.outputs.tag }}
+          tags: |
+            ${{ secrets.NCR }}/slack-app:${{ needs.tag.outputs.tag }}
+            ${{ secrets.NCR }}/slack-app:latest
