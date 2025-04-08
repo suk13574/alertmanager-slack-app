@@ -20,6 +20,14 @@ jobs:
         id: tag
         run: echo "TAG=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
 
+      - name: Show docker image tag
+        run: |
+          echo ""
+          echo "=========================================="
+          echo "🚀 Docker Image Tag: ${{ steps.tag.outputs.TAG }}"
+          echo "=========================================="
+          echo ""        
+
   ncr:
     runs-on: ubuntu-latest
     needs: tag
