@@ -34,6 +34,7 @@ def panel():
         return "", 200
     except GrafanaNotInitializedError as e:
         slack_api.chat_post_message(text=e.message)
+        return jsonify({"error": str(e), "message": str(e)}), 500
     except Exception as e:
         logging.error(f"Command Error - command /panel: {traceback.format_exc()}")
         return jsonify({"error": str(e), "message": str(e)}), 500

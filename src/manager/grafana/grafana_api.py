@@ -12,12 +12,22 @@ class GrafanaAPI:
         self.endpoint = None
         self.token = None
 
-    def init_grafana(self, grafana_urls, endpoint="dev"):
+    def init_grafana(self, grafana_urls):
         self.grafana_urls = grafana_urls
+        default_endpoint = self._find_default_endpoint()
 
-        is_success = self.set_endpoint(endpoint)
-        if not is_success:
+        if not self.set_endpoint(default_endpoint):
             logging.warning("Grafana API is not initialized properly.")
+
+    def _find_default_endpoint(self):
+        if not self.grafana_urls:
+            return None
+
+        for name, config in self.grafana_urls.items():
+            if config.get("default", False):
+                return name
+
+        return next(iter(self.grafana_urls), None)
 
     def set_endpoint(self, endpoint: str):
         if not self.grafana_urls or endpoint not in self.grafana_urls.keys():
