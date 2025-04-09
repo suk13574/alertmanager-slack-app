@@ -3,6 +3,8 @@ from functools import lru_cache
 
 import requests
 
+from app.errors.GrafanaNotInitializedError import GrafanaNotInitializedError
+
 
 class GrafanaAPI:
     def __init__(self):
@@ -12,18 +14,29 @@ class GrafanaAPI:
 
     def init_grafana(self, grafana_urls, endpoint="dev"):
         self.grafana_urls = grafana_urls
-        self.set_endpoint(endpoint)
+
+        is_success = self.set_endpoint(endpoint)
+        if not is_success:
+            logging.warning("Grafana API is not initialized properly.")
 
     def set_endpoint(self, endpoint: str):
-        if endpoint not in self.grafana_urls.keys():
+        if not self.grafana_urls or endpoint not in self.grafana_urls.keys():
             return False
 
         self.endpoint = self.grafana_urls.get(endpoint).get("url")
         self.token = self.grafana_urls.get(endpoint).get("token")
         return True
 
+    def _is_initialized(self):
+        if not self.grafana_urls or not self.endpoint or not self.token:
+            logging.warning("Grafana API is not initialized properly.")
+            return False
+        return True
+
     def _request(self, verb, url, body={}, header={}):
-        logging.info(f"[Request Grafana] URL: {url}, verb: {verb}")
+        if not self._is_initialized():
+            logging.error("Grafana API Error - Grafana API is not initialized")
+            raise GrafanaNotInitializedError
 
         header["Authorization"] = f"Bearer {self.token}"
         header.setdefault("Content-Type", "application/json")
@@ -40,7 +53,8 @@ class GrafanaAPI:
             raise SyntaxError("Verb is not correct.")
 
         if res.status_code >= 400:
-            logging.error(f"Grafana API Error - request url: {url}, http status code: {res.status_code}, body: {res.text}")
+            logging.error(
+                f"Grafana API Error - request url: {url}, http status code: {res.status_code}, body: {res.text}")
             raise requests.HTTPError(f"Grafana API Error - http status code: {res.status_code}, body: {res.text}")
         else:
             return res

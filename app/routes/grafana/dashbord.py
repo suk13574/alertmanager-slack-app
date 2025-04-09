@@ -3,6 +3,7 @@ import traceback
 
 from flask import Blueprint, request, jsonify
 
+from app.errors.GrafanaNotInitializedError import GrafanaNotInitializedError
 from app.services.slack_cilent import slack_api
 from src.manager.grafana.panel_image_manager import PanelImageManager
 
@@ -31,6 +32,8 @@ def panel():
         slack_api.open_view(trigger_id=trigger_id, view=view)
 
         return "", 200
+    except GrafanaNotInitializedError as e:
+        slack_api.chat_post_message(text=e.message)
     except Exception as e:
         logging.error(f"Command Error - command /panel: {traceback.format_exc()}")
         return jsonify({"error": str(e), "message": str(e)}), 500
