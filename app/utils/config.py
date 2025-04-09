@@ -16,7 +16,7 @@ def get_config_file(key):
     try:
         with open(config_path, "r") as config_file:
             config = json.load(config_file)
-            return config[key]
+            return config.get(key, None)
     except FileNotFoundError as e:
         raise FileNotFoundError(f"Config Error - Not found config file: {config_path}, error message: {e}")
     except json.JSONDecodeError as e:

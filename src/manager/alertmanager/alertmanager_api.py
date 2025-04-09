@@ -2,23 +2,49 @@ import logging
 
 import requests
 
+from app.errors.AlertmanagerNotInitializedError import AlertmanagerNotInitializedError
+
 
 class AlertmanagerAPI:
     def __init__(self):
         self.alertmanager_urls = {}
         self.endpoint = None
 
-    def init_alertmanager_urls(self, alertmanager_urls, endpoint="dev"):
+    def init_alertmanager_urls(self, alertmanager_urls):
         self.alertmanager_urls = alertmanager_urls
-        self.set_endpoint(endpoint)
+
+        default_endpoint = self._find_default_endpoint()
+
+        if not self.set_endpoint(default_endpoint):
+            logging.warning("Alertmanager API is not initialized properly.")
+
+    def _find_default_endpoint(self):
+        if not self.alertmanager_urls:
+            return None
+
+        for name, config in self.alertmanager_urls.items():
+            if config.get("default", False):
+                return name
+
+        return next(iter(self.alertmanager_urls), None)
 
     def set_endpoint(self, endpoint: str):
-        if endpoint not in self.alertmanager_urls.keys():
+        if not self.alertmanager_urls or endpoint not in self.alertmanager_urls.keys():
             return False
-        self.endpoint = self.alertmanager_urls.get(endpoint)
+        self.endpoint = self.alertmanager_urls.get(endpoint).get("url")
+        return True
+
+    def _is_initialized(self):
+        if not self.alertmanager_urls or not self.endpoint:
+            logging.warning("Alertmanager API is not initialized properly.")
+            return False
         return True
 
     def _request(self, verb, url, body={}):
+        if not self._is_initialized():
+            logging.error("Alertmanager API Error - Alertmanager API is not initialized")
+            raise AlertmanagerNotInitializedError
+
         logging.info(f"[Request Alertmanager] URL: {url}, verb: {verb}")
         if verb == "get":
             res = requests.get(url, verify=False)

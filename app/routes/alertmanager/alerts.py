@@ -4,6 +4,7 @@ import traceback
 from flask import Blueprint, request, jsonify
 from slack_sdk.errors import SlackApiError
 
+from app.errors.AlertmanagerNotInitializedError import AlertmanagerNotInitializedError
 from app.services.slack_cilent import slack_api
 from src.manager.alertmanager.alerts_manager import AlertsManager
 
@@ -31,6 +32,9 @@ def alerts():
     except SlackApiError as e:
         logging.error(f"SlackApiError: {traceback.format_exc()}")
         return jsonify({"error": str(e)}), 500
+    except AlertmanagerNotInitializedError as e:
+        slack_api.chat_post_message(text=e.message)
+        return jsonify({"error": str(e), "message": str(e)}), 500
     except Exception as e:
         logging.error(f"Command Error - command /alerts: {traceback.format_exc()}")
         return jsonify({"error": str(e), "message": str(e)}), 500
