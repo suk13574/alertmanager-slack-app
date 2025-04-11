@@ -11,6 +11,7 @@ from app.routes.grafana.set_grafana import set_grafana_bp
 from app.services.alertmanater import alertmanager_api
 from app.services.slack_cilent import slack_api
 from app.services.grafana import grafana_api
+from app.services.slack_verifier import slack_verifier, init_slack_verifier
 
 from app.utils.config import Config
 from app.utils.logger import setup_logging
@@ -27,6 +28,7 @@ def create_app():
     grafana_api.init_grafana(grafana_urls=app.config.get("GRAFANA_URLS"))
     alertmanager_api.init_alertmanager_urls(app.config.get("ALERTMANAGER_URLS"))
     slack_api.init_slack(token=app.config.get("SLACK_BOT_TOKEN"), channel=app.config.get("SLACK_CHANNEL_ID"))
+    init_slack_verifier(signing_secret=app.config.get("SIGNING_SECRET"))
 
     # Register Blueprints
     app.register_blueprint(interactions_bp, url_prefix="/slack")

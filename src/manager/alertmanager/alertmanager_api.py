@@ -16,7 +16,9 @@ class AlertmanagerAPI:
         default_endpoint = self._find_default_endpoint()
 
         if not self.set_endpoint(default_endpoint):
-            logging.warning("Alertmanager API is not initialized properly.")
+            logging.warning("[Uninitialized] Alertmanager API is not initialized properly.")
+        else:
+            logging.info("[Initialized] AlertmanagerAPI is initialized")
 
     def _find_default_endpoint(self):
         if not self.alertmanager_urls:
@@ -36,7 +38,7 @@ class AlertmanagerAPI:
 
     def _is_initialized(self):
         if not self.alertmanager_urls or not self.endpoint:
-            logging.warning("Alertmanager API is not initialized properly.")
+            # logging.warning("[Uninitialized] Alertmanager API is not initialized properly.")
             return False
         return True
 
