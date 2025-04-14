@@ -17,7 +17,9 @@ class GrafanaAPI:
         default_endpoint = self._find_default_endpoint()
 
         if not self.set_endpoint(default_endpoint):
-            logging.warning("Grafana API is not initialized properly.")
+            logging.warning("[Uninitialized] Grafana API is not initialized properly.")
+        else:
+            logging.info("[Initialized] GrafanaAPI is initialized")
 
     def _find_default_endpoint(self):
         if not self.grafana_urls:
@@ -39,7 +41,7 @@ class GrafanaAPI:
 
     def _is_initialized(self):
         if not self.grafana_urls or not self.endpoint or not self.token:
-            logging.warning("Grafana API is not initialized properly.")
+            # logging.warning("[Uninitialized] Grafana API is not initialized properly.")
             return False
         return True
 

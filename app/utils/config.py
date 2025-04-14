@@ -30,5 +30,6 @@ class Config:
 
     SLACK_BOT_TOKEN = get_config_env("SLACK_BOT_TOKEN")
     SLACK_CHANNEL_ID = get_config_env("SLACK_CHANNEL_ID")
+    SIGNING_SECRET = get_config_env("SIGNING_SECRET")
 
     ALERTMANAGER_URLS = get_config_file("ALERTMANAGER_URLS")
