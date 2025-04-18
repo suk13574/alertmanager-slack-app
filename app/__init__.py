@@ -7,6 +7,7 @@ from app.routes.alertmanager.silences import silences_bp
 from app.routes.alertmanager.set_alert import set_alert_bp
 from app.routes.grafana.dashbord import dashboard_bp
 from app.routes.grafana.set_grafana import set_grafana_bp
+from app.routes.common.overview import overview_bp
 
 from app.services.alertmanater import alertmanager_api
 from app.services.slack_cilent import slack_api
@@ -32,6 +33,9 @@ def create_app():
 
     # Register Blueprints
     app.register_blueprint(interactions_bp, url_prefix="/slack")
+
+    # common
+    app.register_blueprint(overview_bp, url_prefix="/slack/common")
 
     # alertmanager
     app.register_blueprint(alerts_bp, url_prefix="/slack/am")
