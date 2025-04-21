@@ -75,10 +75,10 @@ class SilencesManager:
             state_values = view["state"]["values"]
             private_metadata = view.get("private_metadata", None)
 
-            dt = state_values["datetime"]["datetime_input"]["selected_date_time"]
-            creator = state_values["creator"]["creator_input"]["value"]
-            description = state_values["description"]["description_input"]["value"]
-            labels = state_values["labels"]["labels_input"]["value"]
+            dt = state_values["silence_datetime_block"]["datetime_input"]["selected_date_time"]
+            creator = state_values["silence_creator_block"]["creator_input"]["value"]
+            description = state_values["silence_description_block"]["description_input"]["value"]
+            labels = state_values["silence_labels_block"]["labels_input"]["value"]
 
             end_time = datetime.fromtimestamp(dt, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
             start_time = datetime.now(tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
@@ -124,7 +124,7 @@ class SilencesManager:
             "blocks": [
                 {
                     "type": "input",
-                    "block_id": "datetime",
+                    "block_id": "silence_datetime_block",
                     "label": {
                         "type": "plain_text",
                         "text": "End date (default: +2h)",
@@ -137,7 +137,7 @@ class SilencesManager:
                 },
                 {
                     "type": "input",
-                    "block_id": "creator",
+                    "block_id": "silence_creator_block",
                     "label": {
                         "type": "plain_text",
                         "text": "Creator"
@@ -150,7 +150,7 @@ class SilencesManager:
                 },
                 {
                     "type": "input",
-                    "block_id": "description",
+                    "block_id": "silence_description_block",
                     "label": {
                         "type": "plain_text",
                         "text": "Description"
@@ -163,7 +163,7 @@ class SilencesManager:
                 },
                 {
                     "type": "input",
-                    "block_id": "labels",
+                    "block_id": "silence_labels_block",
                     "label": {
                         "type": "plain_text",
                         "text": "Labels (key:value 형태로 작성해주세요.)"
