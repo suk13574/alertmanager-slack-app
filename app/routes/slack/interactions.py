@@ -7,12 +7,17 @@ from flask import Blueprint, request, jsonify
 
 from app.services.slack_cilent import slack_api
 from app.services.slack_verifier import get_slack_verifier
+from app.services.alertmanater import alertmanager_api
+from app.services.grafana import grafana_api
+from src.manager.alertmanager.alerts_manager import AlertsManager
 from src.manager.grafana.panel_image_manager import PanelImageManager
 from src.manager.alertmanager.silences_manager import SilencesManager
+
 
 interactions_bp = Blueprint("interactions", __name__)
 silences_manager = SilencesManager()
 dashboard_manager = PanelImageManager()
+alerts_manager = AlertsManager()
 
 
 @interactions_bp.before_request
@@ -127,6 +132,44 @@ def handle_block_actions(interaction_data):
                 new_view = dashboard_manager.update_modal_query_var(view, selected_data, custom_var_name)
 
                 slack_api.update_view(view_id=view_id, view_hash=view_hash, view=new_view)
+
+            except Exception as e:
+                logging.error(f"Slack Interaction Error - block action({action_id}): {traceback.format_exc()}")
+                return jsonify({"error": str(e)}), 500
+
+        elif action_id.startswith("overview_actions_"):
+            # print(json.dumps(interaction_data, indent=4))
+            values = interaction_data.get("state", {}).get("values", {})
+
+            try:
+                what_action = action_id.split("_")[-1]
+                service = action_id.split("_")[-2]
+
+                if service == "alertmanager":
+                    target_api = alertmanager_api
+                    target_endpoint = values.get("alertmanager_urls_radio_button_block", {}).get(
+                        "alertmanager_urls_radio_button_action", {}).get("selected_option", {}).get("value", None)
+                elif service == "grafana":
+                    target_api = grafana_api
+                    target_endpoint = values.get("grafana_urls_radio_button_block", {}).get(
+                        "grafana_urls_radio_button_action", {}).get("selected_option", {}).get("value", None)
+                else:
+                    return jsonify({"error": f"Unknown service: {service}"}, 500)
+
+                is_changed = target_api.set_endpoint(target_endpoint)
+                if not is_changed:
+                    raise Exception(f"set_endpoint Error - service: {service}, endpoint: {target_endpoint}")
+
+                if what_action == "alerts":
+                    blocks = alerts_manager.alerts()
+                    slack_api.chat_post_message(text=f"alerts list 조회", blocks=blocks)
+                elif what_action == "silences":
+                    blocks = silences_manager.get_silences()
+                    slack_api.chat_post_message(text=f"silence list 조회", blocks=blocks)
+                elif what_action == "panel":
+                    view = dashboard_manager.open_modal_ds_image()
+                    slack_api.open_view(trigger_id=trigger_id, view=view)
+                    return jsonify({"error": f"Unknown action: {what_action}"}, 500)
 
             except Exception as e:
                 logging.error(f"Slack Interaction Error - block action({action_id}): {traceback.format_exc()}")

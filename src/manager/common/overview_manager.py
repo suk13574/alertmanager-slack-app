@@ -19,8 +19,8 @@ class OverviewManager:
         if alertmanager_endpoint_key:
             urls = alertmanager_api.alertmanager_urls.keys()
             actions = [
-                {"text": "Get Alerts", "value": "get_alerts"},
-                {"text": "Get Silences", "value": "get_silences"}
+                {"text": "Get Alerts", "value": "alerts"},
+                {"text": "Get Silences", "value": "silences"}
             ]
             blocks.extend(self.make_block_connedted("Alertmanager", alertmanager_endpoint_key, urls, actions))
         else:
@@ -30,7 +30,7 @@ class OverviewManager:
         if grafana_endpoint_key:
             urls = grafana_api.grafana_urls.keys()
             actions = [
-                {"text": "Get Panel", "value": "get_panel"}
+                {"text": "Get Panel", "value": "panel"}
             ]
             blocks.extend(self.make_block_connedted("Grafana", grafana_endpoint_key, urls, actions))
         else:
@@ -65,6 +65,7 @@ class OverviewManager:
         ]
 
     def make_block_connedted(self, service, init_url, urls, actions):
+
         url_options = [
             {
                 "value": url,
@@ -82,7 +83,7 @@ class OverviewManager:
                     "text": action["text"],
                 },
                 "value": action["value"],
-                "action_id": f"{service}_actions_button_{action["value"]}_action"
+                "action_id": f"overview_actions_{service.lower()}_{action["value"]}"
             } for action in actions
         ]
 
@@ -104,7 +105,7 @@ class OverviewManager:
             },
             {
                 "type": "input",
-                "block_id": f"{service}_urls_radio_button_block",
+                "block_id": f"{service.lower()}_urls_radio_button_block",
                 "label": {
                     "type": "plain_text",
                     "text": f"{service} is Connected!",
@@ -112,7 +113,7 @@ class OverviewManager:
                 "dispatch_action": False,
                 "element": {
                     "type": "radio_buttons",
-                    "action_id": f"{service}_urls_radio_button_action",
+                    "action_id": f"{service.lower()}_urls_radio_button_action",
                     "initial_option": {
                         "value": init_url,
                         "text": {
@@ -125,7 +126,7 @@ class OverviewManager:
             },
             {
                 "type": "actions",
-                "block_id": f"{service}_actions_button_block",
+                "block_id": f"{service.lower()}_actions_button_block",
                 "elements": button_element
             }
         ]
