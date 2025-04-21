@@ -229,34 +229,35 @@ class PanelImageManager:
     @staticmethod
     def make_block_dashboard(title:str, folder_id:str) -> list:
         res = grafana_api.list_dash_in_folder(int(folder_id))
-        options = []
-        for dashboard in res:
-            options.append({
+        options = [{
                 "text": {
                     "type": "plain_text",
                     "text": dashboard["title"],
                 },
                 "value": str(dashboard["url"])
-            })
-        blocks = [
-            {
-                "type": "section",
-                "block_id": "grafana_dashboard_block",
-                "text": {
-                    "type": "mrkdwn",
-                    "text": f"Pick a dashboard in {title}"
-                },
-                "accessory": {
-                    "type": "static_select",
-                    "placeholder": {
-                        "type": "plain_text",
-                        "text": "Select a dashboard"
+            } for dashboard in res]
+
+        blocks = []
+        if options:
+            blocks = [
+                {
+                    "type": "section",
+                    "block_id": "grafana_dashboard_block",
+                    "text": {
+                        "type": "mrkdwn",
+                        "text": f"Pick a dashboard in {title}"
                     },
-                    "options": options,
-                    "action_id": "grafana-dashboard-static_select"
+                    "accessory": {
+                        "type": "static_select",
+                        "placeholder": {
+                            "type": "plain_text",
+                            "text": "Select a dashboard"
+                        },
+                        "options": options,
+                        "action_id": "grafana-dashboard-static_select"
+                    }
                 }
-            }
-        ]
+            ]
 
         return blocks
 
