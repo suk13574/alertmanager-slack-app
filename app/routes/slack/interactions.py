@@ -77,6 +77,7 @@ def handle_block_actions(interaction_data):
             except Exception as e:
                 logging.error(f"Slack Interaction Error - creating the silence modal: {traceback.format_exc()}")
                 return jsonify({"error": str(e)}), 500
+
         elif action_id == "grafana-ds-folder-static_select":
             title = action["selected_option"]["text"]["text"]
             folder_id = action["selected_option"]["value"]
@@ -92,7 +93,8 @@ def handle_block_actions(interaction_data):
                 error_details = traceback.format_exc()
                 logging.error(f"Slack Interaction Error - block action({action_id}): {error_details}")
                 return jsonify({"error": str(e)}), 500
-        elif action_id == "grafana-dashboard-static_select":
+
+        elif action_id == "grafana_dashboard_static_select":
             try:
                 ds_url = action["selected_option"]["value"]
                 view_id = interaction_data["view"]["id"]
@@ -138,12 +140,13 @@ def handle_block_actions(interaction_data):
                 return jsonify({"error": str(e)}), 500
 
         elif action_id.startswith("overview_actions_"):
-            # print(json.dumps(interaction_data, indent=4))
             values = interaction_data.get("state", {}).get("values", {})
 
             try:
-                what_action = action_id.split("_")[-1]
-                service = action_id.split("_")[-2]
+                action_id_replace = action_id.replace("overview_actions_", "").replace("_radio_button", "")
+
+                service = action_id_replace.split("_")[0]
+                what_action = action_id_replace.split("_")[1]
 
                 if service == "alertmanager":
                     target_api = alertmanager_api

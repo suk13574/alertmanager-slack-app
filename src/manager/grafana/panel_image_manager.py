@@ -254,7 +254,7 @@ class PanelImageManager:
                             "text": "Select a dashboard"
                         },
                         "options": options,
-                        "action_id": "grafana-dashboard-static_select"
+                        "action_id": "grafana_dashboard_static_select"
                     }
                 }
             ]
@@ -397,7 +397,7 @@ class PanelImageManager:
 
             time_from = state_values["grafana_time_from_block"]["time_radio_button"]["selected_option"]["value"]
             panel_id = state_values["grafana_panel_block"]["panel_static_select"]['selected_option']["value"]
-            dashboard_url = state_values["grafana_dashboard_block"]["grafana-dashboard-static_select"]["selected_option"]["value"]
+            dashboard_url = state_values["grafana_dashboard_block"]["grafana_dashboard_static_select"]["selected_option"]["value"]
             dashboard_uid = dashboard_url.split("/")[2:][0]
             dashboard_name = dashboard_url.split("/")[2:][1]
 
