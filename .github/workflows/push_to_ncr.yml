@@ -1,0 +1,54 @@
+name: Docker Image CI & Push to NCR
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+
+  tag:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tag.outputs.TAG }}
+      
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+                  
+      - name: Set version with Git commit hash
+        id: tag
+        run: echo "TAG=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Show docker image tag
+        run: |
+          echo ""
+          echo "=========================================="
+          echo "🚀 Docker Image Tag: ${{ steps.tag.outputs.TAG }}"
+          echo "=========================================="
+          echo ""        
+
+  ncr:
+    runs-on: ubuntu-latest
+    needs: tag
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4 
+        with:
+          token: ${{ secrets.USER_TOKEN }}
+   
+      - name: Login to NCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.NCR }}
+          username: ${{ secrets.NCR_USERNAME }}
+          password: ${{ secrets.NCR_PASSWORD }}
+          
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          push: true
+          tags: |
+            ${{ secrets.NCR }}/slack-app:${{ needs.tag.outputs.tag }}
+            ${{ secrets.NCR }}/slack-app:latest

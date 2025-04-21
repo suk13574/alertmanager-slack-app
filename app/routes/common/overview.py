@@ -1,17 +1,19 @@
+import json
 import logging
 import traceback
 
 from flask import Blueprint, request, jsonify
 
-from app.services.slack_cilent import slack_api
 from app.services.slack_verifier import get_slack_verifier
-from src.manager.alertmanager.set_aert_manager import SetAlertManager
+from app.services.slack_cilent import slack_api
+from src.manager.common.overview_manager import OverviewManager
 
-set_alert_bp = Blueprint("set_alert", __name__)
-set_alert_manager = SetAlertManager()
+overview_bp = Blueprint("overview", __name__)
+
+overview_manager = OverviewManager()
 
 
-@set_alert_bp.before_request
+@overview_bp.before_request
 def log_request():
     raw_body = request.get_data()
     timestamp = request.headers.get("X-Slack-Request-Timestamp")
@@ -27,16 +29,24 @@ def log_request():
     user_name = data.get("user_name", "not found username")
     user_id = data.get("user_id", "not found user id")
 
+
+
     logging.info(f"[Slack Command Request] User Name: {user_name}, User ID: {user_id}, Command: {command}")
 
 
-@set_alert_bp.route("/set_alert", methods=["POST"])
-def set_alertmanager():
+@overview_bp.route("/overview", methods=["POST"])
+def overview():
     try:
-        text = request.form.get("text")
-        message = set_alert_manager.set_alertmanager_url(text)
-        slack_api.chat_post_message(text=message)
+        data = request.form
+        user_name = data.get("user_name", "not found username")
+        # user_name = "test"
+
+        blocks = overview_manager.get_overview(user_name)
+        # print(json.dumps(blocks, indent=4))
+
+        slack_api.chat_post_message(text="overview 조회", blocks=blocks)
+
         return "", 200
     except Exception as e:
-        logging.error(f"Command Error - command /set: {traceback.format_exc()}")
-        return jsonify({"error": str(e)}), 500
+        logging.error(f"Command Error - command /overview: {traceback.format_exc()}")
+        return jsonify({"error": str(e), "message": str(e)}), 500
