@@ -283,67 +283,69 @@ class PanelImageManager:
                 # 일반 패널 처리
                 options.append(create_option(panel))
 
-        blocks = [
-            {
-                "type": "input",
-                "block_id": "grafana_time_from_block",
-                "element": {
-                    "type": "radio_buttons",
-                    "options": [
-                        {
-                            "text": {
-                                "type": "plain_text",
-                                "text": "30m"
+        blocks = []
+        if options:
+            blocks = [
+                {
+                    "type": "input",
+                    "block_id": "grafana_time_from_block",
+                    "element": {
+                        "type": "radio_buttons",
+                        "options": [
+                            {
+                                "text": {
+                                    "type": "plain_text",
+                                    "text": "30m"
+                                },
+                                "value": "now-30m"
                             },
-                            "value": "now-30m"
-                        },
-                        {
-                            "text": {
-                                "type": "plain_text",
-                                "text": "2h"
+                            {
+                                "text": {
+                                    "type": "plain_text",
+                                    "text": "2h"
+                                },
+                                "value": "now-2h"
                             },
-                            "value": "now-2h"
-                        },
-                        {
-                            "text": {
-                                "type": "plain_text",
-                                "text": "1d"
+                            {
+                                "text": {
+                                    "type": "plain_text",
+                                    "text": "1d"
+                                },
+                                "value": "now-1d"
                             },
-                            "value": "now-1d"
-                        },
-                        {
-                            "text": {
-                                "type": "plain_text",
-                                "text": "7d"
-                            },
-                            "value": "now-7d"
-                        }
-                    ],
-                    "action_id": "time_radio_button"
-                },
-                "label": {
-                    "type": "plain_text",
-                    "text": "Time",
-                }
-            },
-            {
-                "type": "input",
-                "block_id": "grafana_panel_block",
-                "element": {
-                    "type": "static_select",
-                    "placeholder": {
-                        "type": "plain_text",
-                        "text": "Select a panel"
+                            {
+                                "text": {
+                                    "type": "plain_text",
+                                    "text": "7d"
+                                },
+                                "value": "now-7d"
+                            }
+                        ],
+                        "action_id": "time_radio_button"
                     },
-                    "options": options,
-                    "action_id": "panel_static_select"
+                    "label": {
+                        "type": "plain_text",
+                        "text": "Time",
+                    }
                 },
-                "label": {
-                    "type": "plain_text",
-                    "text": "panel"
+                {
+                    "type": "input",
+                    "block_id": "grafana_panel_block",
+                    "element": {
+                        "type": "static_select",
+                        "placeholder": {
+                            "type": "plain_text",
+                            "text": "Select a panel"
+                        },
+                        "options": options,
+                        "action_id": "panel_static_select"
+                    },
+                    "label": {
+                        "type": "plain_text",
+                        "text": "panel"
+                    }
                 }
-            }
-        ]
+            ]
         return blocks
 
     @staticmethod
