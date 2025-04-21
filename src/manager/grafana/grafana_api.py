@@ -10,6 +10,7 @@ class GrafanaAPI:
     def __init__(self):
         self.grafana_urls = {}
         self.endpoint = None
+        self.endpoint_key = None
         self.token = None
 
     def init_grafana(self, grafana_urls):
@@ -35,6 +36,7 @@ class GrafanaAPI:
         if not self.grafana_urls or endpoint not in self.grafana_urls.keys():
             return False
 
+        self.endpoint_key = endpoint
         self.endpoint = self.grafana_urls.get(endpoint).get("url")
         self.token = self.grafana_urls.get(endpoint).get("token")
         return True

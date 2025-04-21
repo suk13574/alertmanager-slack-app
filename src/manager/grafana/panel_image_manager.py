@@ -229,34 +229,35 @@ class PanelImageManager:
     @staticmethod
     def make_block_dashboard(title:str, folder_id:str) -> list:
         res = grafana_api.list_dash_in_folder(int(folder_id))
-        options = []
-        for dashboard in res:
-            options.append({
+        options = [{
                 "text": {
                     "type": "plain_text",
                     "text": dashboard["title"],
                 },
                 "value": str(dashboard["url"])
-            })
-        blocks = [
-            {
-                "type": "section",
-                "block_id": "grafana_dashboard_block",
-                "text": {
-                    "type": "mrkdwn",
-                    "text": f"Pick a dashboard in {title}"
-                },
-                "accessory": {
-                    "type": "static_select",
-                    "placeholder": {
-                        "type": "plain_text",
-                        "text": "Select a dashboard"
+            } for dashboard in res]
+
+        blocks = []
+        if options:
+            blocks = [
+                {
+                    "type": "section",
+                    "block_id": "grafana_dashboard_block",
+                    "text": {
+                        "type": "mrkdwn",
+                        "text": f"Pick a dashboard in {title}"
                     },
-                    "options": options,
-                    "action_id": "grafana-dashboard-static_select"
+                    "accessory": {
+                        "type": "static_select",
+                        "placeholder": {
+                            "type": "plain_text",
+                            "text": "Select a dashboard"
+                        },
+                        "options": options,
+                        "action_id": "grafana_dashboard_static_select"
+                    }
                 }
-            }
-        ]
+            ]
 
         return blocks
 
@@ -282,67 +283,69 @@ class PanelImageManager:
                 # 일반 패널 처리
                 options.append(create_option(panel))
 
-        blocks = [
-            {
-                "type": "input",
-                "block_id": "grafana_time_from_block",
-                "element": {
-                    "type": "radio_buttons",
-                    "options": [
-                        {
-                            "text": {
-                                "type": "plain_text",
-                                "text": "30m"
+        blocks = []
+        if options:
+            blocks = [
+                {
+                    "type": "input",
+                    "block_id": "grafana_time_from_block",
+                    "element": {
+                        "type": "radio_buttons",
+                        "options": [
+                            {
+                                "text": {
+                                    "type": "plain_text",
+                                    "text": "30m"
+                                },
+                                "value": "now-30m"
                             },
-                            "value": "now-30m"
-                        },
-                        {
-                            "text": {
-                                "type": "plain_text",
-                                "text": "2h"
+                            {
+                                "text": {
+                                    "type": "plain_text",
+                                    "text": "2h"
+                                },
+                                "value": "now-2h"
                             },
-                            "value": "now-2h"
-                        },
-                        {
-                            "text": {
-                                "type": "plain_text",
-                                "text": "1d"
+                            {
+                                "text": {
+                                    "type": "plain_text",
+                                    "text": "1d"
+                                },
+                                "value": "now-1d"
                             },
-                            "value": "now-1d"
-                        },
-                        {
-                            "text": {
-                                "type": "plain_text",
-                                "text": "7d"
-                            },
-                            "value": "now-7d"
-                        }
-                    ],
-                    "action_id": "time_radio_button"
-                },
-                "label": {
-                    "type": "plain_text",
-                    "text": "Time",
-                }
-            },
-            {
-                "type": "input",
-                "block_id": "grafana_panel_block",
-                "element": {
-                    "type": "static_select",
-                    "placeholder": {
-                        "type": "plain_text",
-                        "text": "Select a panel"
+                            {
+                                "text": {
+                                    "type": "plain_text",
+                                    "text": "7d"
+                                },
+                                "value": "now-7d"
+                            }
+                        ],
+                        "action_id": "time_radio_button"
                     },
-                    "options": options,
-                    "action_id": "panel_static_select"
+                    "label": {
+                        "type": "plain_text",
+                        "text": "Time",
+                    }
                 },
-                "label": {
-                    "type": "plain_text",
-                    "text": "panel"
+                {
+                    "type": "input",
+                    "block_id": "grafana_panel_block",
+                    "element": {
+                        "type": "static_select",
+                        "placeholder": {
+                            "type": "plain_text",
+                            "text": "Select a panel"
+                        },
+                        "options": options,
+                        "action_id": "panel_static_select"
+                    },
+                    "label": {
+                        "type": "plain_text",
+                        "text": "panel"
+                    }
                 }
-            }
-        ]
+            ]
         return blocks
 
     @staticmethod
@@ -394,7 +397,7 @@ class PanelImageManager:
 
             time_from = state_values["grafana_time_from_block"]["time_radio_button"]["selected_option"]["value"]
             panel_id = state_values["grafana_panel_block"]["panel_static_select"]['selected_option']["value"]
-            dashboard_url = state_values["grafana_dashboard_block"]["grafana-dashboard-static_select"]["selected_option"]["value"]
+            dashboard_url = state_values["grafana_dashboard_block"]["grafana_dashboard_static_select"]["selected_option"]["value"]
             dashboard_uid = dashboard_url.split("/")[2:][0]
             dashboard_name = dashboard_url.split("/")[2:][1]
 

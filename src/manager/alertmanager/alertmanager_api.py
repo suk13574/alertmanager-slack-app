@@ -9,6 +9,7 @@ class AlertmanagerAPI:
     def __init__(self):
         self.alertmanager_urls = {}
         self.endpoint = None
+        self.endpoint_key = None
 
     def init_alertmanager_urls(self, alertmanager_urls):
         self.alertmanager_urls = alertmanager_urls
@@ -33,6 +34,8 @@ class AlertmanagerAPI:
     def set_endpoint(self, endpoint: str):
         if not self.alertmanager_urls or endpoint not in self.alertmanager_urls.keys():
             return False
+
+        self.endpoint_key = endpoint
         self.endpoint = self.alertmanager_urls.get(endpoint).get("url")
         return True
 
