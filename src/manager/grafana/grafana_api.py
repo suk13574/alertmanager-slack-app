@@ -3,7 +3,7 @@ from functools import lru_cache
 
 import requests
 
-from app.errors.GrafanaNotInitializedError import GrafanaNotInitializedError
+from app.errors.grafana_not_initialized_error import GrafanaNotInitializedError
 
 
 class GrafanaAPI:

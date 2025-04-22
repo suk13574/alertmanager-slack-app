@@ -2,7 +2,7 @@ import logging
 
 import requests
 
-from app.errors.AlertmanagerNotInitializedError import AlertmanagerNotInitializedError
+from app.errors.alertmanager_not_initialized_error import AlertmanagerNotInitializedError
 
 
 class AlertmanagerAPI:

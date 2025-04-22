@@ -1,6 +1,11 @@
-from app import create_app
+from app import slack_app
+from app.utils.config import Config
+from slack_bolt.adapter.socket_mode import SocketModeHandler
+import app.events.overview
+import app.events.alertmanager
+import app.events.grafana
 
-app = create_app()
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=3000)
+    handler = SocketModeHandler(slack_app, Config.SLACK_BOT_SOCKET_MODE_TOKEN)
+    handler.start()
