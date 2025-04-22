@@ -11,7 +11,7 @@ silences_manager = SilencesManager()
 renderer_manager = RendererManager()
 
 
-@slack_app.action("grafana-ds-folder-static_select")
+@slack_app.action("grafana_ds_folder_static_select")
 def folder(ack, body, say):
     ack()
     trigger_id = body["trigger_id"]
@@ -29,7 +29,7 @@ def folder(ack, body, say):
             slack_api.update_view(view_id=view_id, view_hash=view_hash, view=new_view)
 
         except Exception as e:
-            logging.error(f"Slack action error - grafana-ds-folder-static_select: {traceback.format_exc()}")
+            logging.error(f"Slack action error - grafana_ds_folder_static_select: {traceback.format_exc()}")
 
 
 @slack_app.action("grafana_dashboard_static_select")

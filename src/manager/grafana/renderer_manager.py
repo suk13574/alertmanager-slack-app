@@ -219,7 +219,7 @@ class RendererManager:
                         "text": "Select a folder"
                     },
                     "options": options,
-                    "action_id": "grafana-ds-folder-static_select"
+                    "action_id": "grafana_ds_folder_static_select"
                 }
             }
         ]

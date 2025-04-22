@@ -83,7 +83,7 @@ class OverviewManager:
                     "text": action["text"],
                 },
                 "value": action["value"],
-                "action_id": f"overview_actions_{service.lower()}_{action["value"]}_radio_button"
+                "action_id": f"overview_actions_{service.lower()}_{action["value"]}_button"
             } for action in actions
         ]
 
