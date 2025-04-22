@@ -8,11 +8,11 @@ from app.services.slack_cilent import slack_api
 from app.services.alertmanater import alertmanager_api
 from app.services.grafana import grafana_api
 from src.manager.alertmanager.alerts_manager import AlertsManager
-from src.manager.grafana.panel_image_manager import PanelImageManager
+from src.manager.grafana.renderer_manager import RendererManager
 from src.manager.alertmanager.silences_manager import SilencesManager
 
 silences_manager = SilencesManager()
-dashboard_manager = PanelImageManager()
+renderer_manager = RendererManager()
 alerts_manager = AlertsManager()
 
 overview_manager = OverviewManager()
@@ -77,7 +77,7 @@ def overview_panel(ack, body, say):
         grafana_api.set_endpoint(endpoint)
         # TODO 에러 처리
 
-        view = dashboard_manager.open_modal_ds_image()
+        view = renderer_manager.open_modal_ds_image()
         slack_api.open_view(trigger_id=trigger_id, view=view)
     except Exception as e:
         logging.error(f"Slack action error - overview_actions_grafana_panel_radio_button: {traceback.format_exc()}")

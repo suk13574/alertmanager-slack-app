@@ -4,11 +4,11 @@ import traceback
 from app import slack_app
 from app.services.slack_cilent import slack_api
 from src.manager.alertmanager.alerts_manager import AlertsManager
-from src.manager.grafana.panel_image_manager import PanelImageManager
+from src.manager.grafana.renderer_manager import RendererManager
 from src.manager.alertmanager.silences_manager import SilencesManager
 
 silences_manager = SilencesManager()
-dashboard_manager = PanelImageManager()
+renderer_manager = RendererManager()
 alerts_manager = AlertsManager()
 
 

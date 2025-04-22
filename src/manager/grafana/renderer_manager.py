@@ -10,7 +10,7 @@ import logging
 import traceback
 
 
-class PanelImageManager:
+class RendererManager:
     def __init__(self):
         pass
 

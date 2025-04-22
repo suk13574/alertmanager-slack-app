@@ -5,10 +5,10 @@ import traceback
 from app import slack_app
 from app.services.slack_cilent import slack_api
 from src.manager.alertmanager.silences_manager import SilencesManager
-from src.manager.grafana.panel_image_manager import PanelImageManager
+from src.manager.grafana.renderer_manager import RendererManager
 
 silences_manager = SilencesManager()
-dashboard_manager = PanelImageManager()
+renderer_manager = RendererManager()
 
 
 @slack_app.action("grafana-ds-folder-static_select")
@@ -25,7 +25,7 @@ def folder(ack, body, say):
             view_hash = body["view"]["hash"]
             view = body["view"]
 
-            new_view = dashboard_manager.update_modal_dashboard(view, title, folder_id)
+            new_view = renderer_manager.update_modal_dashboard(view, title, folder_id)
             slack_api.update_view(view_id=view_id, view_hash=view_hash, view=new_view)
 
         except Exception as e:
@@ -43,7 +43,7 @@ def dashboard(ack, body, say):
             view_id = body["view"]["id"]
             view_hash = body["view"]["hash"]
             view = body["view"]
-            new_view = dashboard_manager.update_modal_panel(view, ds_url)
+            new_view = renderer_manager.update_modal_panel(view, ds_url)
 
             slack_api.update_view(view_id=view_id, view_hash=view_hash, view=new_view)
 
@@ -62,7 +62,7 @@ def is_variables(ack, body, say):
             view_id = body["view"]["id"]
             view_hash = body["view"]["hash"]
             view = body["view"]
-            new_view = dashboard_manager.update_modal_variables(view, selected_data)
+            new_view = renderer_manager.update_modal_variables(view, selected_data)
 
             slack_api.update_view(view_id=view_id, view_hash=view_hash, view=new_view)
         except Exception as e:
@@ -84,7 +84,7 @@ def custom_variables(ack, body, say):
             view_hash = body["view"]["hash"]
             view = body["view"]
 
-            new_view = dashboard_manager.update_modal_query_var(view, selected_data, custom_var_name)
+            new_view = renderer_manager.update_modal_query_var(view, selected_data, custom_var_name)
 
             slack_api.update_view(view_id=view_id, view_hash=view_hash, view=new_view)
         except Exception as e:
@@ -96,7 +96,7 @@ def submit_panel(ack, body, client, view):
     ack()
 
     try:
-        is_success, result = dashboard_manager.create_dashboard_image(view)
+        is_success, result = renderer_manager.create_dashboard_image(view)
         if is_success:
             slack_api.upload_file(file=result,
                                   filename="grafana_panel.png",
