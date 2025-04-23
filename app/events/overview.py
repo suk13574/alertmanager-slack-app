@@ -4,7 +4,6 @@ import traceback
 from app import slack_app
 
 from src.manager.common.overview_manager import OverviewManager
-from app.services.slack_cilent import slack_api
 from app.services.alertmanater import alertmanager_api
 from app.services.grafana import grafana_api
 from src.manager.alertmanager.alerts_manager import AlertsManager
@@ -24,7 +23,6 @@ def overview(ack, say, command):
 
     try:
         user_name = command["user_name"]
-        trigger_id = command["trigger_id"]
         blocks = overview_manager.get_overview(user_name)
 
         say(blocks=blocks, text="overview 조회")
@@ -63,7 +61,7 @@ def overview_silences(ack, body, say):
 
 
 @slack_app.action("overview_actions_grafana_panel_button")
-def overview_panel(ack, body, say):
+def overview_panel(ack, body, client):
     ack()
     try:
         trigger_id = body["trigger_id"]
@@ -73,10 +71,8 @@ def overview_panel(ack, body, say):
                     .get("selected_option", {}).get("value", None))
 
         grafana_api.set_endpoint(endpoint)
-        # TODO 에러 처리
 
         view = renderer_manager.open_modal_ds_image()
-        say.views_open(trigger_id=trigger_id, view=view)
-        # slack_api.open_view(trigger_id=trigger_id, view=view)
+        client.views_open(trigger_id=trigger_id, view=view)
     except Exception as e:
         logging.error(f"Slack action error - overview_actions_grafana_panel_button: {traceback.format_exc()}")
