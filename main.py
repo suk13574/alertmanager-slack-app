@@ -4,6 +4,7 @@ from slack_bolt.adapter.socket_mode import SocketModeHandler
 import app.events.overview
 import app.events.alertmanager
 import app.events.grafana
+import app.middleware.global_middleware
 
 
 if __name__ == "__main__":

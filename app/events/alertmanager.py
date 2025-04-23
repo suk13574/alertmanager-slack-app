@@ -30,13 +30,13 @@ def silences(ack, body, client):
 
 
 @slack_app.view("silence_modal")
-def submit_silence(ack, say, view):
+def submit_silence(ack, client, context, view):
     ack()
 
     try:
         message = silences_manager.create_silence(view)
-        say(text=message)
+        client.chat_postMessage(channel=context["default_channel"], text=message)
     except Exception as e:
-        logging.error(f"Slack submit error - silence_modal: {traceback.format_exc()}")
+        logging.error(f"[Slack submit error] silence_modal: {traceback.format_exc()}")
 
 

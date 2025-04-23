@@ -2,7 +2,7 @@ import logging
 import re
 import traceback
 
-from app import slack_app, Config
+from app import slack_app
 from src.manager.alertmanager.silences_manager import SilencesManager
 from src.manager.grafana.renderer_manager import RendererManager
 
@@ -87,18 +87,18 @@ def custom_variables(ack, body, client):
 
 
 @slack_app.view("ds_image_modal")
-def submit_panel(ack, client, say, view):
+def submit_panel(ack, context, client, view):
     ack()
 
     try:
         is_success, result = renderer_manager.create_dashboard_image(view)
         if is_success:
-            client.files_upload_v2(channel=Config.SLACK_CHANNEL_ID,
+            client.files_upload_v2(channel=context["default_channel"],
                                    file=result,
                                    filename="grafana_panel.png",
                                    title="Grafana Panel Image 📊",
                                    initial_comment="Grafana Panel Image 📊")
         else:
-            say.chat_postMessage(text=result)
+            client.chat_postMessage(channel=context["default_channel"], text=result)
     except Exception as e:
         logging.error(f"Slack submit error - ds_image_modal: {traceback.format_exc()}")
