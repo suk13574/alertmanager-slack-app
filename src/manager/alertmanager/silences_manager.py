@@ -2,6 +2,7 @@ import calendar
 import logging
 import traceback
 from datetime import datetime, timezone, timedelta
+from typing import Tuple
 
 from app.services.alertmanater import alertmanager_api
 
@@ -10,7 +11,7 @@ class SilencesManager:
     def __init__(self):
         pass
 
-    def get_silences(self):
+    def get_silences(self) -> list[dict]:
         silences = alertmanager_api.get_silences()
 
         silence_blocks = [
@@ -32,7 +33,7 @@ class SilencesManager:
                 ])
         return silence_blocks
 
-    def make_block_silence(self, silence):
+    def make_block_silence(self, silence: dict) -> dict:
         return {
                 "type": "section",
                 "text": {
@@ -58,7 +59,7 @@ class SilencesManager:
             }
 
     @staticmethod
-    def get_label(matchers):
+    def get_label(matchers: list) -> str:
         label_str = ""
 
         for matcher in matchers:
@@ -70,7 +71,7 @@ class SilencesManager:
             label_str += f"`{key}:{value}`\n"
         return label_str
 
-    def create_silence(self, view):
+    def create_silence(self, view: dict) -> str:
         try:
             state_values = view["state"]["values"]
             private_metadata = view.get("private_metadata", None)
@@ -95,16 +96,19 @@ class SilencesManager:
                 body.update({"id": private_metadata})
 
             alertmanager_api.post_silences(body)
+        except KeyError as e:
+            logging.error(f"[Create Silence Error] - No have key: {e.args[0]}")
+            return f"❌ Silence 설정 처리 중 오류가 발생했습니다: KeyError"
         except Exception as e:
-            logging.error(f"Create Silence Error - {traceback.format_exc()}")
+            logging.error(f"[Create Silence Error] - {traceback.format_exc()}")
             return f"❌ Silence 설정 처리 중 오류가 발생했습니다: \n{str(e)}"
 
         return "✅ Silence 설정이 성공적으로 처리되었습니다."
 
-    def open_modal_silence(self, blocks, action_value):
+    def open_modal_silence(self, blocks: list, action_value: str) -> dict:
         block = self.extract_block(blocks, action_value)
         labels = block["text"]["text"]
-        is_update, initial_values = self.extract_fields(block)
+        is_update, initial_values = self.init_silence_modal(block)
 
         modal = {
             "type": "modal",
@@ -190,7 +194,7 @@ class SilencesManager:
         return modal
 
     @staticmethod
-    def make_matchers(labels: str):
+    def make_matchers(labels: str) -> list:
         matchers = []
 
         for label in labels.split('\n'):
@@ -205,7 +209,7 @@ class SilencesManager:
         return matchers
 
     @staticmethod
-    def extract_block(blocks, button_value):
+    def extract_block(blocks: list, button_value: str) -> dict:
         for block in blocks:
             if block.get("type") == "section" and "accessory" in block:
                 accessory = block["accessory"]
@@ -213,17 +217,17 @@ class SilencesManager:
                 if accessory.get("type") == "button" and accessory.get("value") == button_value:
                     return block
 
-    @staticmethod
-    def extract_labels(blocks, button_value):
-        for block in blocks:
-            if block.get("type") == "section" and "accessory" in block:
-                accessory = block["accessory"]
+    # @staticmethod
+    # def extract_labels(blocks, button_value):
+    #     for block in blocks:
+    #         if block.get("type") == "section" and "accessory" in block:
+    #             accessory = block["accessory"]
+    #
+    #             if accessory.get("type") == "button" and accessory.get("value") == button_value:
+    #                 return block["text"]["text"]
 
-                if accessory.get("type") == "button" and accessory.get("value") == button_value:
-                    return block["text"]["text"]
-
     @staticmethod
-    def extract_fields(block):
+    def init_silence_modal(block: dict) -> Tuple[bool, dict]:
         initial_values = {
             "datetime_input": int((datetime.now() + timedelta(hours=2)).timestamp()),
             "creator_input": "",

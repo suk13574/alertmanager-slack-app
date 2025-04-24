@@ -26,7 +26,7 @@ def silences(ack, body, client):
             client.views_open(trigger_id=trigger_id, view=view)
 
         except Exception as e:
-            logging.error(f"Slack action error - silence_button: {traceback.format_exc()}")
+            logging.error(f"[Slack action error] - silence_button: {traceback.format_exc()}")
 
 
 @slack_app.view("silence_modal")

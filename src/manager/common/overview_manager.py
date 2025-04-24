@@ -6,7 +6,7 @@ class OverviewManager:
     def __init__(self):
         pass
 
-    def get_overview(self, user):
+    def get_overview(self, user: str) -> list:
         blocks = [{
             "type": "section",
             "text": {

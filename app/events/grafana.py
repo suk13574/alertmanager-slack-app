@@ -27,7 +27,7 @@ def folder(ack, body, client):
             client.views_update(view_id=view_id, view_hash=view_hash, view=new_view)
 
         except Exception as e:
-            logging.error(f"Slack action error - grafana_ds_folder_static_select: {traceback.format_exc()}")
+            logging.error(f"[Slack action error] - grafana_ds_folder_static_select: {traceback.format_exc()}")
 
 
 @slack_app.action("grafana_dashboard_static_select")
@@ -45,7 +45,7 @@ def dashboard(ack, body, client):
             client.views_update(view_id=view_id, view_hash=view_hash, view=new_view)
 
         except Exception as e:
-            logging.error(f"Slack action error - grafana_dashboard_static_select: {traceback.format_exc()}")
+            logging.error(f"[Slack action error] - grafana_dashboard_static_select: {traceback.format_exc()}")
 
 
 @slack_app.action("is_variables_radio_button")
@@ -62,7 +62,7 @@ def is_variables(ack, body, client):
 
             client.views_update(view_id=view_id, view_hash=view_hash, view=new_view)
         except Exception as e:
-            logging.error(f"Slack action error - is_variables_radio_button: {traceback.format_exc()}")
+            logging.error(f"[Slack action error] - is_variables_radio_button: {traceback.format_exc()}")
 
 
 @slack_app.action(re.compile(r"^custom_var_radio_button_.*$"))
@@ -83,7 +83,7 @@ def custom_variables(ack, body, client):
 
             client.views_update(view_id=view_id, view_hash=view_hash, view=new_view)
         except Exception as e:
-            logging.error(f"Slack action error - {action["action_id"]}: {traceback.format_exc()}")
+            logging.error(f"[Slack action error] - {action["action_id"]}: {traceback.format_exc()}")
 
 
 @slack_app.view("ds_image_modal")
@@ -91,7 +91,7 @@ def submit_panel(ack, context, client, view):
     ack()
 
     try:
-        is_success, result = renderer_manager.create_dashboard_image(view)
+        is_success, result = renderer_manager.rendering_panel_image(view)
         if is_success:
             client.files_upload_v2(channel=context["default_channel"],
                                    file=result,
@@ -101,4 +101,4 @@ def submit_panel(ack, context, client, view):
         else:
             client.chat_postMessage(channel=context["default_channel"], text=result)
     except Exception as e:
-        logging.error(f"Slack submit error - ds_image_modal: {traceback.format_exc()}")
+        logging.error(f"[Slack submit error] - ds_image_modal: {traceback.format_exc()}")

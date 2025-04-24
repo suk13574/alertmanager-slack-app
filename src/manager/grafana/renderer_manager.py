@@ -1,5 +1,6 @@
 import re
 from functools import lru_cache
+from typing import Union, Tuple
 
 from app.services.grafana import grafana_api
 
@@ -101,7 +102,7 @@ class RendererManager:
         return self.update_modal(view, required_blocks, query_var_blocks)
 
     @staticmethod
-    def make_block_custom_vars(custom_vars: list) -> list:
+    def make_block_custom_vars(custom_vars: list) -> list[dict]:
         blocks = []
 
         for custom_var in custom_vars:
@@ -175,14 +176,8 @@ class RendererManager:
         }
 
     @staticmethod
-    def make_block_folder() -> list:
-        # try:
+    def make_block_folder() -> list[dict]:
         res = grafana_api.list_dash_folder()
-        # except requests.HTTPError as e:
-        #     if "Unauthorized" in e.args[0]:
-        #         raise GrafanaAPIError("❌ Grafana Token Error - Grafana 접근 권한이 없습니다.")
-        #     else:
-        #         raise GrafanaAPIError("❌ Grafana API 호출 중 에러가 발생했습니다.")
 
         options = [{
             "text": {
@@ -223,7 +218,7 @@ class RendererManager:
         return blocks
 
     @staticmethod
-    def make_block_dashboard(title:str, folder_id:str) -> list:
+    def make_block_dashboard(title: str, folder_id: str) -> list[dict]:
         res = grafana_api.list_dash_in_folder(int(folder_id))
         options = [{
                 "text": {
@@ -258,7 +253,7 @@ class RendererManager:
         return blocks
 
     @staticmethod
-    def make_blocks_panel(res: dict) -> list:
+    def make_blocks_panel(res: dict) -> list[dict]:
         def create_option(panel):
             return {
                 "text": {
@@ -345,7 +340,7 @@ class RendererManager:
         return blocks
 
     @staticmethod
-    def make_block_is_var(dashboard_uid: str) -> list:
+    def make_block_is_var(dashboard_uid: str) -> list[dict]:
         return [{
             "type": "section",
             "block_id": "grafana_is_var_block",
@@ -386,8 +381,7 @@ class RendererManager:
             }
         }]
 
-    @staticmethod
-    def create_dashboard_image(view: dict):
+    def rendering_panel_image(self, view: dict) -> Tuple[bool, Union[bytes, str]]:
         try:
             state_values = view["state"]["values"]
 
@@ -417,12 +411,14 @@ class RendererManager:
             res = grafana_api.redner_image(dashboard_uid, dashboard_name, time_from, "now", panel_id, add_query)
 
             return True, res.content
+        except KeyError as e:
+            logging.error(f"[Grafana panel image rendering error] - No have key: {e.args[0]}")
         except Exception as e:
-            logging.error(f"[Grafana] Error in create_dashboard_image: {traceback.format_exc()}")
-            return False, f"❌ grafana dashboard image 생성 중 오류 발생: {str(e)}"
+            logging.error(f"[Grafana panel image rendering error] - {traceback.format_exc()}")
+            return False, f"❌ grafana dashboard image 생성 중 오류가 발생했습니다. 로그를 확인해주세요."
 
     @staticmethod
-    def extract_vars(dashboard_uid: str):
+    def extract_vars(dashboard_uid: str) -> Tuple[list[dict], list[dict]]:
         res = grafana_api.get_dashboard(dashboard_uid)
         variables = res.get("dashboard", {}).get("templating", {}).get("list", [])
 
@@ -478,7 +474,7 @@ class RendererManager:
         res = grafana_api.query_label_value(ds_uid, query)
 
         if res.get("status") != "success":
-            logging.error(f"[grafana] Failed to get the dashboard variable. ds_uid={ds_uid}, query={query}"
+            logging.error(f"[Grafana API Error] - Error getting query label, ds_uid={ds_uid}, query={query}"
                           f"\n {traceback.format_exc()}")
             raise Exception
 

@@ -49,7 +49,7 @@ class GrafanaAPI:
 
     def _request(self, verb, url, body={}, header={}):
         if not self._is_initialized():
-            logging.error("Grafana API Error - Grafana API is not initialized")
+            logging.error("[Grafana API Error] - Grafana API is not initialized")
             raise GrafanaNotInitializedError
 
         header["Authorization"] = f"Bearer {self.token}"

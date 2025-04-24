@@ -4,6 +4,7 @@ import traceback
 import requests
 
 from app import slack_app
+from app.errors.set_endpoint_error import SetEndpointError
 
 from src.manager.common.overview_manager import OverviewManager
 from app.services.alertmanater import alertmanager_api
@@ -29,7 +30,7 @@ def overview(ack, say, command):
 
         say(blocks=blocks, text="overview 조회")
     except Exception as e:
-        logging.error(f"Slack command error - /overview: {traceback.format_exc()}")
+        logging.error(f"[Slack command error] - /overview: {traceback.format_exc()}")
 
 
 @slack_app.action("overview_actions_alertmanager_alerts_button")
@@ -39,12 +40,18 @@ def overview_alerts(ack, body, say):
         values = body["state"]["values"]
         endpoint = (values.get("alertmanager_urls_radio_button_block", {}).get("alertmanager_urls_radio_button_action", {})
                     .get("selected_option", {}).get("value", None))
-        alertmanager_api.set_endpoint(endpoint)
+
+        if not alertmanager_api.set_endpoint(endpoint):
+            raise SetEndpointError(endpoint, "alertmanager")
 
         blocks = alerts_manager.alerts()
         say(blocks=blocks, text="alerts 조회")
+
+    except SetEndpointError as e:
+        logging.error(f"[Set endpoint error] - {e}")
+        say(text=f"❌ endpoint 설정에 실패했습니다. 로그와 config 설정을 확인해주세요")
     except Exception as e:
-        logging.error(f"Slack action error - overview_actions_alertmanager_alerts_button: {traceback.format_exc()}")
+        logging.error(f"[Slack action error] - overview_actions_alertmanager_alerts_button: {traceback.format_exc()}")
 
 
 @slack_app.action("overview_actions_alertmanager_silences_button")
@@ -54,16 +61,20 @@ def overview_silences(ack, body, say):
         values = body["state"]["values"]
         endpoint = (values.get("alertmanager_urls_radio_button_block", {}).get("alertmanager_urls_radio_button_action", {})
                     .get("selected_option", {}).get("value", None))
-        alertmanager_api.set_endpoint(endpoint)
+        if not alertmanager_api.set_endpoint(endpoint):
+            raise SetEndpointError(endpoint, "alertmanager")
 
         blocks = silences_manager.get_silences()
         say(blocks=blocks, text="silences 조회")
+    except SetEndpointError as e:
+        logging.error(f"[Set endpoint error] - {e}")
+        say(text=f"❌ endpoint 설정에 실패했습니다. 로그와 config 설정을 확인해주세요")
     except Exception as e:
-        logging.error(f"Slack action error - overview_actions_alertmanager_silences_button: {traceback.format_exc()}")
+        logging.error(f"[Slack action error] - overview_actions_alertmanager_silences_button: {traceback.format_exc()}")
 
 
 @slack_app.action("overview_actions_grafana_panel_button")
-def overview_panel(ack, context, body, client):
+def overview_panel(ack, context, body, client, say):
     ack()
     try:
         trigger_id = body["trigger_id"]
@@ -72,10 +83,14 @@ def overview_panel(ack, context, body, client):
         endpoint = (values.get("grafana_urls_radio_button_block", {}).get("grafana_urls_radio_button_action", {})
                     .get("selected_option", {}).get("value", None))
 
-        grafana_api.set_endpoint(endpoint)
+        if not grafana_api.set_endpoint(endpoint):
+            raise SetEndpointError(endpoint, "grafana")
 
         view = renderer_manager.open_modal_ds_image()
         client.views_open(trigger_id=trigger_id, view=view)
+    except SetEndpointError as e:
+        logging.error(f"[Set endpoint error] - {e}")
+        say(text=f"❌ endpoint 설정에 실패했습니다. 로그와 config 설정을 확인해주세요")
     except requests.HTTPError as e:
         if "Unauthorized" in e.args[0]:
             message = "❌ Grafana Token Error - Grafana 접근 권한이 없습니다."
