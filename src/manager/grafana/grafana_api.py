@@ -68,8 +68,8 @@ class GrafanaAPI:
 
         if res.status_code >= 400:
             logging.error(
-                f"Grafana API Error - request url: {url}, http status code: {res.status_code}, body: {res.text}")
-            raise requests.HTTPError(f"Grafana API Error - http status code: {res.status_code}, body: {res.text}")
+                f"[Grafana API Error] - request url: {url}, http status code: {res.status_code}, body: {res.text}")
+            raise requests.HTTPError(f"[Grafana API Error] - http status code: {res.status_code}, body: {res.text}")
         else:
             return res
 

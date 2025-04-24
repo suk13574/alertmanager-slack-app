@@ -1,6 +1,8 @@
 import logging
 import traceback
 
+import requests
+
 from app import slack_app
 
 from src.manager.common.overview_manager import OverviewManager
@@ -61,7 +63,7 @@ def overview_silences(ack, body, say):
 
 
 @slack_app.action("overview_actions_grafana_panel_button")
-def overview_panel(ack, body, client):
+def overview_panel(ack, context, body, client):
     ack()
     try:
         trigger_id = body["trigger_id"]
@@ -74,5 +76,11 @@ def overview_panel(ack, body, client):
 
         view = renderer_manager.open_modal_ds_image()
         client.views_open(trigger_id=trigger_id, view=view)
+    except requests.HTTPError as e:
+        if "Unauthorized" in e.args[0]:
+            message = "❌ Grafana Token Error - Grafana 접근 권한이 없습니다."
+        else:
+            message = "❌ Grafana API 호출 중 에러가 발생했습니다."
+        client.chat_postMessage(channel=context["default_channel"], text=message)
     except Exception as e:
-        logging.error(f"Slack action error - overview_actions_grafana_panel_button: {traceback.format_exc()}")
+        logging.error(f"[Slack action error] - overview_actions_grafana_panel_button: {traceback.format_exc()}")

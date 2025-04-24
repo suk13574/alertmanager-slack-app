@@ -1,4 +1,3 @@
-import json
 import logging
 
 from app import slack_app, Config
