@@ -5,7 +5,7 @@ class AlertsManager:
     def __init__(self):
         self.main_label = "instance_name"
 
-    def alerts(self):
+    def alerts(self) -> list[dict]:
         alerts = alertmanager_api.get_alerts()
 
         alert_template_body = {}
@@ -20,7 +20,7 @@ class AlertsManager:
         return self.make_block_alerts(alert_template_body)
 
     @staticmethod
-    def make_block_alert(labels: dict, fingerprint: str):
+    def make_block_alert(labels: dict, fingerprint: str) -> dict:
         label_str = [f"`{key}:{value}`\n" for key, value in labels.items()]
 
         return {
@@ -42,7 +42,7 @@ class AlertsManager:
         }
 
     @staticmethod
-    def make_block_alerts(alert_templates: dict):
+    def make_block_alerts(alert_templates: dict) -> list[dict]:
         blocks = [{
             "type": "header",
             "text": {

@@ -3,7 +3,7 @@ from functools import lru_cache
 
 import requests
 
-from app.errors.GrafanaNotInitializedError import GrafanaNotInitializedError
+from app.errors.grafana_not_initialized_error import GrafanaNotInitializedError
 
 
 class GrafanaAPI:
@@ -49,7 +49,7 @@ class GrafanaAPI:
 
     def _request(self, verb, url, body={}, header={}):
         if not self._is_initialized():
-            logging.error("Grafana API Error - Grafana API is not initialized")
+            logging.error("[Grafana API Error] - Grafana API is not initialized")
             raise GrafanaNotInitializedError
 
         header["Authorization"] = f"Bearer {self.token}"
@@ -68,8 +68,8 @@ class GrafanaAPI:
 
         if res.status_code >= 400:
             logging.error(
-                f"Grafana API Error - request url: {url}, http status code: {res.status_code}, body: {res.text}")
-            raise requests.HTTPError(f"Grafana API Error - http status code: {res.status_code}, body: {res.text}")
+                f"[Grafana API Error] - request url: {url}, http status code: {res.status_code}, body: {res.text}")
+            raise requests.HTTPError(f"[Grafana API Error] - http status code: {res.status_code}, body: {res.text}")
         else:
             return res
 
