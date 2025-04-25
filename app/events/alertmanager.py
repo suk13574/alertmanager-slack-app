@@ -20,10 +20,10 @@ def silences(ack, body, client):
     for action in body["actions"]:
         try:
             action_value = action["value"]
-            block = body["message"]["blocks"]
+            block = body["view"]["blocks"]
             view = silences_manager.open_modal_silence(block, action_value)
 
-            client.views_open(trigger_id=trigger_id, view=view)
+            client.views_push(trigger_id=trigger_id, view=view)
 
         except Exception as e:
             logging.error(f"[Slack action error] - silence_button: {traceback.format_exc()}")

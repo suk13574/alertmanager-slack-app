@@ -68,3 +68,20 @@ class AlertsManager:
             blocks.append({"type": "divider"})
 
         return blocks
+
+    def open_modal_alerts(self):
+        alerts_blocks = self.alerts()
+
+        return {
+            "type": "modal",
+            "callback_id": "alerts_modal",
+            "title": {
+                "type": "plain_text",
+                "text": "List of firing alerts"
+            },
+            "close": {
+                "type": "plain_text",
+                "text": "Cancel"
+            },
+            "blocks": alerts_blocks
+        }

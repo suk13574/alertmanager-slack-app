@@ -11,7 +11,24 @@ class SilencesManager:
     def __init__(self):
         pass
 
-    def get_silences(self) -> list[dict]:
+    def open_modal_silence_list(self):
+        silences_blocks = self.make_silence_blocks()
+
+        return {
+            "type": "modal",
+            "callback_id": "alerts_modal",
+            "title": {
+                "type": "plain_text",
+                "text": "List of Silences"
+            },
+            "close": {
+                "type": "plain_text",
+                "text": "Cancel"
+            },
+            "blocks": silences_blocks
+        }
+
+    def make_silence_blocks(self) -> list[dict]:
         silences = alertmanager_api.get_silences()
 
         silence_blocks = [
