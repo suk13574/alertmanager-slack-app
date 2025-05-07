@@ -55,6 +55,8 @@ class GrafanaAPI:
         header["Authorization"] = f"Bearer {self.token}"
         header.setdefault("Content-Type", "application/json")
 
+        logging.info(f"[Request Grafana API] - verb: {verb}, url: {url}")
+
         if verb == "get":
             res = requests.get(url, verify=False, headers=header)
         elif verb == "post":
@@ -64,7 +66,7 @@ class GrafanaAPI:
             else:
                 res = requests.post(url, headers=header, data=body)
         else:
-            raise SyntaxError("Verb is not correct.")
+            raise SyntaxError(f"[Grafana API Error] - Verb is not correct. verb: {verb}")
 
         if res.status_code >= 400:
             logging.error(

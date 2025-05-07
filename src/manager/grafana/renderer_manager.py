@@ -54,7 +54,7 @@ class RendererManager:
         return self.update_modal(view, required_blocks, self.make_block_dashboard(title, folder_id))
 
     def update_modal_panel(self, view: dict, dashboard_url: str) -> dict:
-        dashboard_uid = dashboard_url.split("/")[2]
+        dashboard_uid = dashboard_url.split("/")[-2]
         res = grafana_api.get_dashboard(dashboard_uid)
 
         required_blocks = ["grafana_folder_block", "grafana_dashboard_block"]
@@ -219,13 +219,18 @@ class RendererManager:
 
     @staticmethod
     def make_block_dashboard(title: str, folder_id: str) -> list[dict]:
+        def parse_url(dashboard_url: str) -> str:
+            url_split = dashboard_url.split("/d")
+            return str(url_split[-1])
+
         res = grafana_api.list_dash_in_folder(int(folder_id))
         options = [{
                 "text": {
                     "type": "plain_text",
                     "text": dashboard["title"],
                 },
-                "value": str(dashboard["url"])
+                # "value": str(dashboard["url"])
+                "value": parse_url(parse_url(dashboard["url"]))
             } for dashboard in res]
 
         blocks = []
@@ -388,8 +393,8 @@ class RendererManager:
             time_from = state_values["grafana_time_from_block"]["time_radio_button"]["selected_option"]["value"]
             panel_id = state_values["grafana_panel_block"]["panel_static_select"]['selected_option']["value"]
             dashboard_url = state_values["grafana_dashboard_block"]["grafana_dashboard_static_select"]["selected_option"]["value"]
-            dashboard_uid = dashboard_url.split("/")[2:][0]
-            dashboard_name = dashboard_url.split("/")[2:][1]
+            dashboard_uid = dashboard_url.split("/")[-2]
+            dashboard_name = dashboard_url.split("/")[-1]
 
             add_query = ""
             for block_id in state_values.keys():
