@@ -2,6 +2,7 @@ import logging
 import traceback
 
 import requests
+from slack_sdk.errors import SlackApiError
 
 from app import slack_app
 from app.errors.set_endpoint_error import SetEndpointError
@@ -29,6 +30,8 @@ def overview(ack, say, command):
         blocks = overview_manager.get_overview(user_name)
 
         say(blocks=blocks, text="overview 조회")
+    except SlackApiError as e:
+        logging.error(f"[Slack command error] - /overview: {e}")
     except Exception as e:
         logging.error(f"[Slack command error] - /overview: {traceback.format_exc()}")
 
@@ -50,6 +53,8 @@ def overview_alerts(ack, body, say, client):
         client.views_open(trigger_id=trigger_id, view=view)
         # say(blocks=blocks, text="alerts 조회")
 
+    except SlackApiError as e:
+        logging.error(f"[Slack command error] - /overview: {e}")
     except SetEndpointError as e:
         logging.error(f"[Set endpoint error] - {e}")
         say(text=f"❌ endpoint 설정에 실패했습니다. 로그와 config 설정을 확인해주세요")
@@ -73,6 +78,9 @@ def overview_silences(ack, body, say, client):
 
         client.views_open(trigger_id=trigger_id, view=view)
         # say(blocks=blocks, text="silences 조회")
+
+    except SlackApiError as e:
+        logging.error(f"[Slack command error] - /overview: {e}")
     except SetEndpointError as e:
         logging.error(f"[Set endpoint error] - {e}")
         say(text=f"❌ endpoint 설정에 실패했습니다. 로그와 config 설정을 확인해주세요")
@@ -95,6 +103,9 @@ def overview_panel(ack, context, body, client, say):
 
         view = renderer_manager.open_modal_ds_image()
         client.views_open(trigger_id=trigger_id, view=view)
+
+    except SlackApiError as e:
+        logging.error(f"[Slack command error] - /overview: {e}")
     except SetEndpointError as e:
         logging.error(f"[Set endpoint error] - {e}")
         say(text=f"❌ endpoint 설정에 실패했습니다. 로그와 config 설정을 확인해주세요")
