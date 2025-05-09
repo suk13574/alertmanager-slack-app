@@ -3,7 +3,7 @@ from functools import lru_cache
 
 import requests
 
-from app.errors.GrafanaNotInitializedError import GrafanaNotInitializedError
+from app.errors.grafana_not_initialized_error import GrafanaNotInitializedError
 
 
 class GrafanaAPI:
@@ -49,11 +49,13 @@ class GrafanaAPI:
 
     def _request(self, verb, url, body={}, header={}):
         if not self._is_initialized():
-            logging.error("Grafana API Error - Grafana API is not initialized")
+            logging.error("[Grafana API Error] - Grafana API is not initialized")
             raise GrafanaNotInitializedError
 
         header["Authorization"] = f"Bearer {self.token}"
         header.setdefault("Content-Type", "application/json")
+
+        logging.info(f"[Request Grafana API] - verb: {verb}, url: {url}")
 
         if verb == "get":
             res = requests.get(url, verify=False, headers=header)
@@ -64,12 +66,12 @@ class GrafanaAPI:
             else:
                 res = requests.post(url, headers=header, data=body)
         else:
-            raise SyntaxError("Verb is not correct.")
+            raise SyntaxError(f"[Grafana API Error] - Verb is not correct. verb: {verb}")
 
         if res.status_code >= 400:
             logging.error(
-                f"Grafana API Error - request url: {url}, http status code: {res.status_code}, body: {res.text}")
-            raise requests.HTTPError(f"Grafana API Error - http status code: {res.status_code}, body: {res.text}")
+                f"[Grafana API Error] - request url: {url}, http status code: {res.status_code}, body: {res.text}")
+            raise requests.HTTPError(f"[Grafana API Error] - http status code: {res.status_code}, body: {res.text}")
         else:
             return res
 
