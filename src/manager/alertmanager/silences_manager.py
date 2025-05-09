@@ -11,7 +11,24 @@ class SilencesManager:
     def __init__(self):
         pass
 
-    def get_silences(self) -> list[dict]:
+    def open_modal_silence_list(self):
+        silences_blocks = self.make_silence_blocks()
+
+        return {
+            "type": "modal",
+            "callback_id": "alerts_modal",
+            "title": {
+                "type": "plain_text",
+                "text": "List of Silences"
+            },
+            "close": {
+                "type": "plain_text",
+                "text": "Cancel"
+            },
+            "blocks": silences_blocks
+        }
+
+    def make_silence_blocks(self) -> list[dict]:
         silences = alertmanager_api.get_silences()
 
         silence_blocks = [
@@ -35,28 +52,28 @@ class SilencesManager:
 
     def make_block_silence(self, silence: dict) -> dict:
         return {
-                "type": "section",
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": self.get_label(silence.get("matchers", []))
+            },
+            "fields": [
+                {"type": "mrkdwn", "text": f"*Start:* ```{silence.get("startsAt")}```"},
+                {"type": "mrkdwn", "text": f"*End:* ```{silence.get("endsAt")}```"},
+                {"type": "mrkdwn", "text": f"*createdBy:* ```{silence.get("createdBy")}```"},
+                {"type": "mrkdwn", "text": f"*Comment:* ```{silence.get("comment")}```"}
+            ],
+            "accessory": {
+                "type": "button",
                 "text": {
-                    "type": "mrkdwn",
-                    "text": self.get_label(silence.get("matchers", []))
+                    "type": "plain_text",
+                    "text": "Update"
                 },
-                "fields": [
-                    {"type": "mrkdwn", "text": f"*Start:* ```{silence.get("startsAt")}```"},
-                    {"type": "mrkdwn", "text": f"*End:* ```{silence.get("endsAt")}```" },
-                    {"type": "mrkdwn", "text": f"*createdBy:* ```{silence.get("createdBy")}```"},
-                    {"type": "mrkdwn", "text": f"*Comment:* ```{silence.get("comment")}```"}
-                ],
-                "accessory": {
-                    "type": "button",
-                    "text": {
-                        "type": "plain_text",
-                        "text": "Update"
-                    },
-                    "value": silence["id"],
-                    "action_id": "silence_button",
-                    "style": "primary"
-                }
+                "value": silence["id"],
+                "action_id": "silence_button",
+                "style": "primary"
             }
+        }
 
     @staticmethod
     def get_label(matchers: list) -> str:
@@ -79,13 +96,15 @@ class SilencesManager:
             dt = state_values["silence_datetime_block"]["datetime_input"]["selected_date_time"]
             creator = state_values["silence_creator_block"]["creator_input"]["value"]
             description = state_values["silence_description_block"]["description_input"]["value"]
-            labels = state_values["silence_labels_block"]["labels_input"]["value"]
+            # labels = state_values["silence_labels_block"]["labels_input"]["value"]  # type이 plain_text_input일 때 사용
+            labels = state_values["silence_labels_block"]["label_multi_static_select_action"]["selected_options"]  # type이 multi_static_select일 때 사용
 
             end_time = datetime.fromtimestamp(dt, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
             start_time = datetime.now(tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
 
             body = {
-                "matchers": self.make_matchers(labels),
+                # "matchers": self.make_matchers(labels), # type이 plain_text_input일 때 사용
+                "matchers": self.make_matchers_from_options(labels), # type이 multi_static_select일 때 사용
                 "startsAt": start_time,
                 "endsAt": end_time,
                 "createdBy": creator,
@@ -108,6 +127,7 @@ class SilencesManager:
     def open_modal_silence(self, blocks: list, action_value: str) -> dict:
         block = self.extract_block(blocks, action_value)
         labels = block["text"]["text"]
+        init_labels = self.init_labels(labels)
         is_update, initial_values = self.init_silence_modal(block)
 
         modal = {
@@ -165,24 +185,42 @@ class SilencesManager:
                         "initial_value": initial_values["description_input"]
                     }
                 },
+                # {
+                #     "type": "input",
+                #     "block_id": "silence_labels_block",
+                #     "label": {
+                #         "type": "plain_text",
+                #         "text": "Labels (key:value 형태로 작성해주세요.)"
+                #     },
+                #     "element": {
+                #         "type": "plain_text_input",
+                #         "action_id": "labels_input",
+                #         "initial_value": labels.replace("`", ""),
+                #         "multiline": True,
+                #         "placeholder": {
+                #             "type": "plain_text",
+                #             "text": "key:value 형태로 작성해주세요."
+                #         }
+                #     }
+                # },
                 {
                     "type": "input",
                     "block_id": "silence_labels_block",
-                    "label": {
-                        "type": "plain_text",
-                        "text": "Labels (key:value 형태로 작성해주세요.)"
-                    },
                     "element": {
-                        "type": "plain_text_input",
-                        "action_id": "labels_input",
-                        "initial_value": labels.replace("`", ""),
-                        "multiline": True,
+                        "type": "multi_static_select",
                         "placeholder": {
                             "type": "plain_text",
-                            "text": "key:value 형태로 작성해주세요."
-                        }
+                            "text": "Labels",
+                        },
+                        "options": init_labels,
+                        "initial_options": init_labels,
+                        "action_id": "label_multi_static_select_action"
+                    },
+                    "label": {
+                        "type": "plain_text",
+                        "text": "Label",
                     }
-                },
+                }
             ]
         }
 
@@ -209,6 +247,20 @@ class SilencesManager:
         return matchers
 
     @staticmethod
+    def make_matchers_from_options(options: list[dict]) -> list:
+        matchers = []
+
+        for label in options:
+            label_info = label["value"].split("=", 1)
+            matchers.append({
+                "name": label_info[0],
+                "value": label_info[1],
+                "isRegex": False,
+                "isEqual": True
+            })
+        return matchers
+
+    @staticmethod
     def extract_block(blocks: list, button_value: str) -> dict:
         for block in blocks:
             if block.get("type") == "section" and "accessory" in block:
@@ -216,15 +268,6 @@ class SilencesManager:
 
                 if accessory.get("type") == "button" and accessory.get("value") == button_value:
                     return block
-
-    # @staticmethod
-    # def extract_labels(blocks, button_value):
-    #     for block in blocks:
-    #         if block.get("type") == "section" and "accessory" in block:
-    #             accessory = block["accessory"]
-    #
-    #             if accessory.get("type") == "button" and accessory.get("value") == button_value:
-    #                 return block["text"]["text"]
 
     @staticmethod
     def init_silence_modal(block: dict) -> Tuple[bool, dict]:
@@ -247,3 +290,16 @@ class SilencesManager:
             return True, initial_values
         else:
             return False, initial_values
+
+    def init_labels(self, labels: str):
+        label_list = [label.replace(":", "=", 1) for label in labels.replace("`", "").split("\n")]
+
+        options = [{
+            "text": {
+                "type": "plain_text",
+                "text": label,
+            },
+            "value": label
+        } for label in label_list if label.strip()]
+
+        return options

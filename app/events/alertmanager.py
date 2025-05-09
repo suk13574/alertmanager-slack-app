@@ -1,6 +1,8 @@
 import logging
 import traceback
 
+from slack_sdk.errors import SlackApiError
+
 from app import slack_app
 from src.manager.alertmanager.alerts_manager import AlertsManager
 from src.manager.grafana.renderer_manager import RendererManager
@@ -20,11 +22,13 @@ def silences(ack, body, client):
     for action in body["actions"]:
         try:
             action_value = action["value"]
-            block = body["message"]["blocks"]
+            block = body["view"]["blocks"]
             view = silences_manager.open_modal_silence(block, action_value)
 
-            client.views_open(trigger_id=trigger_id, view=view)
+            client.views_push(trigger_id=trigger_id, view=view)
 
+        except SlackApiError as e:
+            logging.error(f"[Slack command error] - /overview: {e}")
         except Exception as e:
             logging.error(f"[Slack action error] - silence_button: {traceback.format_exc()}")
 
@@ -36,6 +40,9 @@ def submit_silence(ack, client, context, view):
     try:
         message = silences_manager.create_silence(view)
         client.chat_postMessage(channel=context["default_channel"], text=message)
+
+    except SlackApiError as e:
+        logging.error(f"[Slack command error] - /overview: {e}")
     except Exception as e:
         logging.error(f"[Slack submit error] silence_modal: {traceback.format_exc()}")
 

@@ -1,3 +1,4 @@
+import json
 import re
 from functools import lru_cache
 from typing import Union, Tuple
@@ -9,6 +10,8 @@ import traceback
 
 
 class RendererManager:
+    GRAFANA_LABEL_MAP = {}
+
     def __init__(self):
         pass
 
@@ -54,7 +57,7 @@ class RendererManager:
         return self.update_modal(view, required_blocks, self.make_block_dashboard(title, folder_id))
 
     def update_modal_panel(self, view: dict, dashboard_url: str) -> dict:
-        dashboard_uid = dashboard_url.split("/")[2]
+        dashboard_uid = dashboard_url.split("/")[-2]
         res = grafana_api.get_dashboard(dashboard_uid)
 
         required_blocks = ["grafana_folder_block", "grafana_dashboard_block"]
@@ -87,14 +90,25 @@ class RendererManager:
 
         for block in view["blocks"]:
             if block["block_id"].startswith("grafana_query_var_"):
-                query_var = eval(block.get("element", {}).get("options", [])[0].get("value", "{}"))
-                if custom_var_name in query_var.get("query", ""):
-                    new_query = self.substitute_variables(query_var["query"], {custom_var_name: custom_var_value})
-                    query_var_values = self.get_label_value(query_var["ds_uid"], new_query)
+                try:
+                    var_name = block["block_id"].replace("grafana_query_var_", "").replace("_block", "")
+                    option_value = block.get("element", {}).get("options", [])[0].get("value")
+                    if not option_value:
+                        raise ValueError("option_value is empty. Check value in block options")
 
-                    new_block = self.make_block_query_vars(query_var_values.get(query_var.get("label_name"), []), query_var)
-                    query_var_blocks.append(new_block)
-                else:
+                    query_var = RendererManager.GRAFANA_LABEL_MAP.get(var_name, {}).get(option_value)
+
+                    if custom_var_name in query_var.get("query", ""):
+                        new_query = self.substitute_variables(query_var["query"], {custom_var_name: custom_var_value})
+                        query_var_values = self.get_label_value(query_var["ds_uid"], new_query)
+
+                        new_block = self.make_block_query_vars(query_var_values.get(query_var.get("label_name"), []), query_var)
+                        query_var_blocks.append(new_block)
+                    else:
+                        query_var_blocks.append(block)
+
+                except Exception as e:
+                    logging.error(f"[Grafana query error] - {e}")
                     query_var_blocks.append(block)
             else:
                 required_blocks.append(block["block_id"])
@@ -135,38 +149,44 @@ class RendererManager:
 
     @staticmethod
     def make_block_query_vars(query_var_values: list, query_var: dict) -> dict:
+        var_name = query_var.get("var_name")
+        RendererManager.GRAFANA_LABEL_MAP[var_name] = {}
+
         # options 만들기
-        options = [{
-            "text": {
-                "type": "plain_text",
-                "text": query_var_value
-            },
-            "value": str(query_var)
-        } for query_var_value in query_var_values]
+        options = []
+        for query_var_value in query_var_values:
+            RendererManager.GRAFANA_LABEL_MAP[var_name][query_var_value] = query_var
+            options.append({
+                "text": {
+                    "type": "plain_text",
+                    "text": query_var_value
+                },
+                "value": query_var_value
+            })
 
         if not options:
+            query_var_value = "no_value"
+            RendererManager.GRAFANA_LABEL_MAP[var_name][query_var_value] = query_var
             options = [{
                 "text": {
                     "type": "plain_text",
-                    "text": "none"
+                    "text": query_var_value
                 },
-                "value": str(query_var)
+                "value": query_var_value
             }]
-
-        ver_name = query_var.get("var_name")
 
         # block 만들기
         return {
             "type": "input",
-            "block_id": f"grafana_query_var_{ver_name}_block",
+            "block_id": f"grafana_query_var_{var_name}_block",
             "optional": True,
             "label": {
                 "type": "plain_text",
-                "text": f"Select label - {ver_name}"
+                "text": f"Select label - {var_name}"
             },
             "element": {
                 "type": "multi_static_select",
-                "action_id": f"grafana_var_multi_select_block_{ver_name}",
+                "action_id": f"grafana_var_multi_select_block_{var_name}",
                 "placeholder": {
                     "type": "plain_text",
                     "text": "Select options"
@@ -219,13 +239,18 @@ class RendererManager:
 
     @staticmethod
     def make_block_dashboard(title: str, folder_id: str) -> list[dict]:
+        def parse_url(dashboard_url: str) -> str:
+            url_split = dashboard_url.split("/d")
+            return str(url_split[-1])
+
         res = grafana_api.list_dash_in_folder(int(folder_id))
         options = [{
                 "text": {
                     "type": "plain_text",
                     "text": dashboard["title"],
                 },
-                "value": str(dashboard["url"])
+                # "value": str(dashboard["url"])
+                "value": parse_url(parse_url(dashboard["url"]))
             } for dashboard in res]
 
         blocks = []
@@ -388,8 +413,8 @@ class RendererManager:
             time_from = state_values["grafana_time_from_block"]["time_radio_button"]["selected_option"]["value"]
             panel_id = state_values["grafana_panel_block"]["panel_static_select"]['selected_option']["value"]
             dashboard_url = state_values["grafana_dashboard_block"]["grafana_dashboard_static_select"]["selected_option"]["value"]
-            dashboard_uid = dashboard_url.split("/")[2:][0]
-            dashboard_name = dashboard_url.split("/")[2:][1]
+            dashboard_uid = dashboard_url.split("/")[-2]
+            dashboard_name = dashboard_url.split("/")[-1]
 
             add_query = ""
             for block_id in state_values.keys():
@@ -471,6 +496,7 @@ class RendererManager:
     @staticmethod
     @lru_cache(maxsize=500)
     def get_label_value(ds_uid: str, query: str) -> dict:
+        """ Grafana의 label 조회 """
         res = grafana_api.query_label_value(ds_uid, query)
 
         if res.get("status") != "success":

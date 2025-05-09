@@ -1,6 +1,9 @@
+import json
 import logging
 import re
 import traceback
+
+from slack_sdk.errors import SlackApiError
 
 from app import slack_app
 from src.manager.alertmanager.silences_manager import SilencesManager
@@ -61,6 +64,9 @@ def is_variables(ack, body, client):
             new_view = renderer_manager.update_modal_variables(view, selected_data)
 
             client.views_update(view_id=view_id, view_hash=view_hash, view=new_view)
+
+        except SlackApiError as e:
+            logging.error(f"[Slack command error] - /overview: {e}")
         except Exception as e:
             logging.error(f"[Slack action error] - is_variables_radio_button: {traceback.format_exc()}")
 
@@ -82,6 +88,9 @@ def custom_variables(ack, body, client):
             new_view = renderer_manager.update_modal_query_var(view, selected_data, custom_var_name)
 
             client.views_update(view_id=view_id, view_hash=view_hash, view=new_view)
+
+        except SlackApiError as e:
+            logging.error(f"[Slack command error] - /overview: {e}")
         except Exception as e:
             logging.error(f"[Slack action error] - {action["action_id"]}: {traceback.format_exc()}")
 
@@ -100,5 +109,8 @@ def submit_panel(ack, context, client, view):
                                    initial_comment="Grafana Panel Image 📊")
         else:
             client.chat_postMessage(channel=context["default_channel"], text=result)
+
+    except SlackApiError as e:
+        logging.error(f"[Slack command error] - /overview: {e}")
     except Exception as e:
         logging.error(f"[Slack submit error] - ds_image_modal: {traceback.format_exc()}")

@@ -2,6 +2,7 @@ import logging
 import traceback
 
 import requests
+from slack_sdk.errors import SlackApiError
 
 from app import slack_app
 from app.errors.set_endpoint_error import SetEndpointError
@@ -29,14 +30,18 @@ def overview(ack, say, command):
         blocks = overview_manager.get_overview(user_name)
 
         say(blocks=blocks, text="overview 조회")
+    except SlackApiError as e:
+        logging.error(f"[Slack command error] - /overview: {e}")
     except Exception as e:
         logging.error(f"[Slack command error] - /overview: {traceback.format_exc()}")
 
 
 @slack_app.action("overview_actions_alertmanager_alerts_button")
-def overview_alerts(ack, body, say):
+def overview_alerts(ack, body, say, client):
     ack()
     try:
+        trigger_id = body["trigger_id"]
+
         values = body["state"]["values"]
         endpoint = (values.get("alertmanager_urls_radio_button_block", {}).get("alertmanager_urls_radio_button_action", {})
                     .get("selected_option", {}).get("value", None))
@@ -44,9 +49,12 @@ def overview_alerts(ack, body, say):
         if not alertmanager_api.set_endpoint(endpoint):
             raise SetEndpointError(endpoint, "alertmanager")
 
-        blocks = alerts_manager.alerts()
-        say(blocks=blocks, text="alerts 조회")
+        view = alerts_manager.open_modal_alerts()
+        client.views_open(trigger_id=trigger_id, view=view)
+        # say(blocks=blocks, text="alerts 조회")
 
+    except SlackApiError as e:
+        logging.error(f"[Slack command error] - /overview: {e}")
     except SetEndpointError as e:
         logging.error(f"[Set endpoint error] - {e}")
         say(text=f"❌ endpoint 설정에 실패했습니다. 로그와 config 설정을 확인해주세요")
@@ -55,17 +63,24 @@ def overview_alerts(ack, body, say):
 
 
 @slack_app.action("overview_actions_alertmanager_silences_button")
-def overview_silences(ack, body, say):
+def overview_silences(ack, body, say, client):
     ack()
     try:
+        trigger_id = body["trigger_id"]
+
         values = body["state"]["values"]
         endpoint = (values.get("alertmanager_urls_radio_button_block", {}).get("alertmanager_urls_radio_button_action", {})
                     .get("selected_option", {}).get("value", None))
         if not alertmanager_api.set_endpoint(endpoint):
             raise SetEndpointError(endpoint, "alertmanager")
 
-        blocks = silences_manager.get_silences()
-        say(blocks=blocks, text="silences 조회")
+        view = silences_manager.open_modal_silence_list()
+
+        client.views_open(trigger_id=trigger_id, view=view)
+        # say(blocks=blocks, text="silences 조회")
+
+    except SlackApiError as e:
+        logging.error(f"[Slack command error] - /overview: {e}")
     except SetEndpointError as e:
         logging.error(f"[Set endpoint error] - {e}")
         say(text=f"❌ endpoint 설정에 실패했습니다. 로그와 config 설정을 확인해주세요")
@@ -88,6 +103,9 @@ def overview_panel(ack, context, body, client, say):
 
         view = renderer_manager.open_modal_ds_image()
         client.views_open(trigger_id=trigger_id, view=view)
+
+    except SlackApiError as e:
+        logging.error(f"[Slack command error] - /overview: {e}")
     except SetEndpointError as e:
         logging.error(f"[Set endpoint error] - {e}")
         say(text=f"❌ endpoint 설정에 실패했습니다. 로그와 config 설정을 확인해주세요")
