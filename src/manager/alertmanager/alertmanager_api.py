@@ -51,20 +51,25 @@ class AlertmanagerAPI:
             raise AlertmanagerNotInitializedError
 
         logging.info(f"[Request Alertmanager] URL: {url}, verb: {verb}")
-        if verb == "get":
-            res = requests.get(url, verify=False)
-        elif verb == "post":
-            headers = {"Content-Type": "application/json"}
 
-            res = requests.post(url, headers=headers, json=body)
-        else:
-            raise SyntaxError("Verb is not correct.")
+        try:
+            if verb == "get":
+                res = requests.get(url, verify=False)
+            elif verb == "post":
+                headers = {"Content-Type": "application/json"}
 
-        if res.status_code >= 400:
-            logging.error(f"[Alertmanger API Error] - request url: {url}, http status code: {res.status_code}, body: {res.json()}")
-            raise requests.HTTPError(f"[Alertmanger API Error] - http status code: {res.status_code}, body: {res.json()}")
-        else:
-            return res.json()
+                res = requests.post(url, headers=headers, json=body)
+            else:
+                raise SyntaxError("[Alertmanager API Error] - Verb is not correct. verb: {verb}")
+
+            if res.status_code >= 400:
+                logging.error(f"[Alertmanger API Error] - request url: {url}, http status code: {res.status_code}, body: {res.json()}")
+                raise requests.HTTPError(f"[Alertmanger API Error] - http status code: {res.status_code}, body: {res.json()}")
+            else:
+                return res.json()
+        except requests.exceptions.SSLError as e:
+            logging.error(f"[Grafana API SSL Error] - request url: {url}, error message: {e}")
+            raise requests.exceptions.SSLError
 
     def get_alerts(self):
         verb = "get"

@@ -57,23 +57,23 @@ class GrafanaAPI:
 
         logging.info(f"[Request Grafana API] - verb: {verb}, url: {url}")
 
-        if verb == "get":
-            res = requests.get(url, verify=False, headers=header)
-        elif verb == "post":
-            if not header.get("Content-Type", None):
-                header["Content-Type"] = "application/json"
+        try:
+            if verb == "get":
+                res = requests.get(url, verify=False, headers=header)
+            elif verb == "post":
                 res = requests.post(url, headers=header, json=body)
             else:
-                res = requests.post(url, headers=header, data=body)
-        else:
-            raise SyntaxError(f"[Grafana API Error] - Verb is not correct. verb: {verb}")
+                raise SyntaxError(f"[Grafana API Error] - Verb is not correct. verb: {verb}")
 
-        if res.status_code >= 400:
-            logging.error(
-                f"[Grafana API Error] - request url: {url}, http status code: {res.status_code}, body: {res.text}")
-            raise requests.HTTPError(f"[Grafana API Error] - http status code: {res.status_code}, body: {res.text}")
-        else:
-            return res
+            if res.status_code >= 400:
+                logging.error(
+                    f"[Grafana API Error] - request url: {url}, http status code: {res.status_code}, body: {res.text}")
+                raise requests.HTTPError(f"[Grafana API Error] - http status code: {res.status_code}, body: {res.text}")
+            else:
+                return res
+        except requests.exceptions.SSLError as e:
+            logging.error(f"[Grafana API SSL Error] - request url: {url}, error message: {e}")
+            raise requests.HTTPError(f"[Grafana API SSL Error] - {e}")
 
     def list_dash_folder(self):
         verb = "get"
