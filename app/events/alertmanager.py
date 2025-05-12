@@ -34,12 +34,13 @@ def silences(ack, body, client):
 
 
 @slack_app.view("silence_modal")
-def submit_silence(ack, client, context, view):
-    ack()
-
+def submit_silence(ack, client, body, context, view):
     try:
         message = silences_manager.create_silence(view)
-        client.chat_postMessage(channel=context["default_channel"], text=message)
+        # client.chat_postMessage(channel=context["default_channel"], text=message)
+        result_view = silences_manager.open_modal_result(message)
+
+        ack(response_action="update", view=result_view)
 
     except SlackApiError as e:
         logging.error(f"[Slack command] - /overview: {e}")

@@ -11,6 +11,28 @@ class SilencesManager:
     def __init__(self):
         pass
 
+    def open_modal_result(self, message):
+        return {
+            "type": "modal",
+            "title": {
+                "type": "plain_text",
+                "text": "Result"
+            },
+            "close": {
+                "type": "plain_text",
+                "text": "Close"
+            },
+            "blocks": [
+                {
+                    "type": "section",
+                    "text": {
+                        "type": "mrkdwn",
+                        "text": message
+                    }
+                }
+            ]
+        }
+
     def open_modal_silence_list(self):
         silences_blocks = self.make_silence_blocks()
 
@@ -97,14 +119,15 @@ class SilencesManager:
             creator = state_values["silence_creator_block"]["creator_input"]["value"]
             description = state_values["silence_description_block"]["description_input"]["value"]
             # labels = state_values["silence_labels_block"]["labels_input"]["value"]  # type이 plain_text_input일 때 사용
-            labels = state_values["silence_labels_block"]["label_multi_static_select_action"]["selected_options"]  # type이 multi_static_select일 때 사용
+            labels = state_values["silence_labels_block"]["label_multi_static_select_action"][
+                "selected_options"]  # type이 multi_static_select일 때 사용
 
             end_time = datetime.fromtimestamp(dt, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
             start_time = datetime.now(tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
 
             body = {
                 # "matchers": self.make_matchers(labels), # type이 plain_text_input일 때 사용
-                "matchers": self.make_matchers_from_options(labels), # type이 multi_static_select일 때 사용
+                "matchers": self.make_matchers_from_options(labels),  # type이 multi_static_select일 때 사용
                 "startsAt": start_time,
                 "endsAt": end_time,
                 "createdBy": creator,

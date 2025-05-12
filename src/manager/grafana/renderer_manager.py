@@ -15,6 +15,28 @@ class RendererManager:
     def __init__(self):
         pass
 
+    def open_modal_result(self, message):
+        return {
+            "type": "modal",
+            "title": {
+                "type": "plain_text",
+                "text": "Result"
+            },
+            "close": {
+                "type": "plain_text",
+                "text": "Close"
+            },
+            "blocks": [
+                {
+                    "type": "section",
+                    "text": {
+                        "type": "mrkdwn",
+                        "text": message
+                    }
+                }
+            ]
+        }
+
     def open_modal_ds_image(self) -> dict:
         return {
             "type": "modal",
@@ -102,7 +124,8 @@ class RendererManager:
                         new_query = self.substitute_variables(query_var["query"], {custom_var_name: custom_var_value})
                         query_var_values = self.get_label_value(query_var["ds_uid"], new_query)
 
-                        new_block = self.make_block_query_vars(query_var_values.get(query_var.get("label_name"), []), query_var)
+                        new_block = self.make_block_query_vars(query_var_values.get(query_var.get("label_name"), []),
+                                                               query_var)
                         query_var_blocks.append(new_block)
                     else:
                         query_var_blocks.append(block)
@@ -245,13 +268,13 @@ class RendererManager:
 
         res = grafana_api.list_dash_in_folder(int(folder_id))
         options = [{
-                "text": {
-                    "type": "plain_text",
-                    "text": dashboard["title"],
-                },
-                # "value": str(dashboard["url"])
-                "value": parse_url(parse_url(dashboard["url"]))
-            } for dashboard in res]
+            "text": {
+                "type": "plain_text",
+                "text": dashboard["title"],
+            },
+            # "value": str(dashboard["url"])
+            "value": parse_url(parse_url(dashboard["url"]))
+        } for dashboard in res]
 
         blocks = []
         if options:

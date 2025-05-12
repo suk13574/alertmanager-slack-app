@@ -97,7 +97,8 @@ def custom_variables(ack, body, client):
 
 @slack_app.view("ds_image_modal")
 def submit_panel(ack, context, client, view):
-    ack()
+    ack(response_action="update", view=renderer_manager.open_modal_result("Grafana에게 이미지를 요청했습니다!🥳\n"
+                                                                          "채팅방에서 결과를 확인해주세요. 이미지 렌더링까지 1~5초 소요됩니다."))
 
     try:
         is_success, result = renderer_manager.rendering_panel_image(view)
