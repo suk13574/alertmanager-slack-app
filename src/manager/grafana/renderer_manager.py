@@ -15,6 +15,28 @@ class RendererManager:
     def __init__(self):
         pass
 
+    def open_modal_result(self, message):
+        return {
+            "type": "modal",
+            "title": {
+                "type": "plain_text",
+                "text": "Result"
+            },
+            "close": {
+                "type": "plain_text",
+                "text": "Close"
+            },
+            "blocks": [
+                {
+                    "type": "section",
+                    "text": {
+                        "type": "mrkdwn",
+                        "text": message
+                    }
+                }
+            ]
+        }
+
     def open_modal_ds_image(self) -> dict:
         return {
             "type": "modal",
@@ -102,13 +124,14 @@ class RendererManager:
                         new_query = self.substitute_variables(query_var["query"], {custom_var_name: custom_var_value})
                         query_var_values = self.get_label_value(query_var["ds_uid"], new_query)
 
-                        new_block = self.make_block_query_vars(query_var_values.get(query_var.get("label_name"), []), query_var)
+                        new_block = self.make_block_query_vars(query_var_values.get(query_var.get("label_name"), []),
+                                                               query_var)
                         query_var_blocks.append(new_block)
                     else:
                         query_var_blocks.append(block)
 
                 except Exception as e:
-                    logging.error(f"[Grafana query error] - {e}")
+                    logging.error(f"[Grafana query] - {e}")
                     query_var_blocks.append(block)
             else:
                 required_blocks.append(block["block_id"])
@@ -245,13 +268,13 @@ class RendererManager:
 
         res = grafana_api.list_dash_in_folder(int(folder_id))
         options = [{
-                "text": {
-                    "type": "plain_text",
-                    "text": dashboard["title"],
-                },
-                # "value": str(dashboard["url"])
-                "value": parse_url(parse_url(dashboard["url"]))
-            } for dashboard in res]
+            "text": {
+                "type": "plain_text",
+                "text": dashboard["title"],
+            },
+            # "value": str(dashboard["url"])
+            "value": parse_url(parse_url(dashboard["url"]))
+        } for dashboard in res]
 
         blocks = []
         if options:
@@ -437,9 +460,9 @@ class RendererManager:
 
             return True, res.content
         except KeyError as e:
-            logging.error(f"[Grafana panel image rendering error] - No have key: {e.args[0]}")
+            logging.error(f"[Grafana panel image rendering] - No have key: {e.args[0]}")
         except Exception as e:
-            logging.error(f"[Grafana panel image rendering error] - {traceback.format_exc()}")
+            logging.error(f"[Grafana panel image rendering] - {traceback.format_exc()}")
             return False, f"❌ grafana dashboard image 생성 중 오류가 발생했습니다. 로그를 확인해주세요."
 
     @staticmethod
@@ -500,7 +523,7 @@ class RendererManager:
         res = grafana_api.query_label_value(ds_uid, query)
 
         if res.get("status") != "success":
-            logging.error(f"[Grafana API Error] - Error getting query label, ds_uid={ds_uid}, query={query}"
+            logging.error(f"[Grafana API] - Error getting query label, ds_uid={ds_uid}, query={query}"
                           f"\n {traceback.format_exc()}")
             raise Exception
 

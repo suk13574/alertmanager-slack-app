@@ -3,13 +3,15 @@ import logging
 import requests
 
 from app.errors.alertmanager_not_initialized_error import AlertmanagerNotInitializedError
+from src.manager.common.common_api import CommonAPI
 
 
-class AlertmanagerAPI:
+class AlertmanagerAPI(CommonAPI):
     def __init__(self):
         self.alertmanager_urls = {}
         self.endpoint = None
         self.endpoint_key = None
+        super().__init__()
 
     def init_alertmanager_urls(self, alertmanager_urls):
         self.alertmanager_urls = alertmanager_urls
@@ -45,31 +47,12 @@ class AlertmanagerAPI:
             return False
         return True
 
-    def _request(self, verb, url, body={}):
+    def _request(self, verb, url, body=None, header=None, **kwargs):
         if not self._is_initialized():
-            logging.error("[Alertmanager API Error] - Alertmanager API is not initialized")
+            logging.error("[Alertmanager API] - Alertmanager API is not initialized")
             raise AlertmanagerNotInitializedError
 
-        logging.info(f"[Request Alertmanager] URL: {url}, verb: {verb}")
-
-        try:
-            if verb == "get":
-                res = requests.get(url, verify=False)
-            elif verb == "post":
-                headers = {"Content-Type": "application/json"}
-
-                res = requests.post(url, headers=headers, json=body)
-            else:
-                raise SyntaxError("[Alertmanager API Error] - Verb is not correct. verb: {verb}")
-
-            if res.status_code >= 400:
-                logging.error(f"[Alertmanger API Error] - request url: {url}, http status code: {res.status_code}, body: {res.json()}")
-                raise requests.HTTPError(f"[Alertmanger API Error] - http status code: {res.status_code}, body: {res.json()}")
-            else:
-                return res.json()
-        except requests.exceptions.SSLError as e:
-            logging.error(f"[Grafana API SSL Error] - request url: {url}, error message: {e}")
-            raise requests.exceptions.SSLError
+        return super()._request(verb, url, body, header, logging_instance_name="Alertmanager API")
 
     def get_alerts(self):
         verb = "get"
@@ -78,7 +61,7 @@ class AlertmanagerAPI:
 
         queries = "?silenced=false"
 
-        return self._request(verb, url + queries)
+        return self._request(verb, url + queries).json()
 
     def get_silences(self):
         verb = "get"
@@ -87,11 +70,11 @@ class AlertmanagerAPI:
 
         queries = "?active=true"
 
-        return self._request(verb, url + queries)
+        return self._request(verb, url + queries).json()
 
     def post_silences(self, body):
         verb = "post"
         path = "/api/v2/silences"
         url = f"{self.endpoint}{path}"
 
-        return self._request(verb, url, body)
+        return self._request(verb, url, body).json()

@@ -30,7 +30,7 @@ def folder(ack, body, client):
             client.views_update(view_id=view_id, view_hash=view_hash, view=new_view)
 
         except Exception as e:
-            logging.error(f"[Slack action error] - grafana_ds_folder_static_select: {traceback.format_exc()}")
+            logging.error(f"[Slack action] - grafana_ds_folder_static_select: {traceback.format_exc()}")
 
 
 @slack_app.action("grafana_dashboard_static_select")
@@ -48,7 +48,7 @@ def dashboard(ack, body, client):
             client.views_update(view_id=view_id, view_hash=view_hash, view=new_view)
 
         except Exception as e:
-            logging.error(f"[Slack action error] - grafana_dashboard_static_select: {traceback.format_exc()}")
+            logging.error(f"[Slack action] - grafana_dashboard_static_select: {traceback.format_exc()}")
 
 
 @slack_app.action("is_variables_radio_button")
@@ -66,9 +66,9 @@ def is_variables(ack, body, client):
             client.views_update(view_id=view_id, view_hash=view_hash, view=new_view)
 
         except SlackApiError as e:
-            logging.error(f"[Slack command error] - /overview: {e}")
+            logging.error(f"[Slack command] - /overview: {e}")
         except Exception as e:
-            logging.error(f"[Slack action error] - is_variables_radio_button: {traceback.format_exc()}")
+            logging.error(f"[Slack action] - is_variables_radio_button: {traceback.format_exc()}")
 
 
 @slack_app.action(re.compile(r"^custom_var_radio_button_.*$"))
@@ -90,14 +90,15 @@ def custom_variables(ack, body, client):
             client.views_update(view_id=view_id, view_hash=view_hash, view=new_view)
 
         except SlackApiError as e:
-            logging.error(f"[Slack command error] - /overview: {e}")
+            logging.error(f"[Slack command] - /overview: {e}")
         except Exception as e:
-            logging.error(f"[Slack action error] - {action["action_id"]}: {traceback.format_exc()}")
+            logging.error(f"[Slack action] - {action["action_id"]}: {traceback.format_exc()}")
 
 
 @slack_app.view("ds_image_modal")
 def submit_panel(ack, context, client, view):
-    ack()
+    ack(response_action="update", view=renderer_manager.open_modal_result("Grafana에게 이미지를 요청했습니다!🥳\n"
+                                                                          "채팅방에서 결과를 확인해주세요. 이미지 렌더링까지 1~5초 소요됩니다."))
 
     try:
         is_success, result = renderer_manager.rendering_panel_image(view)
@@ -111,6 +112,6 @@ def submit_panel(ack, context, client, view):
             client.chat_postMessage(channel=context["default_channel"], text=result)
 
     except SlackApiError as e:
-        logging.error(f"[Slack command error] - /overview: {e}")
+        logging.error(f"[Slack command] - /overview: {e}")
     except Exception as e:
-        logging.error(f"[Slack submit error] - ds_image_modal: {traceback.format_exc()}")
+        logging.error(f"[Slack submit] - ds_image_modal: {traceback.format_exc()}")
