@@ -11,6 +11,28 @@ class SilencesManager:
     def __init__(self):
         pass
 
+    def open_modal_result(self, message):
+        return {
+            "type": "modal",
+            "title": {
+                "type": "plain_text",
+                "text": "Result"
+            },
+            "close": {
+                "type": "plain_text",
+                "text": "Close"
+            },
+            "blocks": [
+                {
+                    "type": "section",
+                    "text": {
+                        "type": "mrkdwn",
+                        "text": message
+                    }
+                }
+            ]
+        }
+
     def open_modal_silence_list(self):
         silences_blocks = self.make_silence_blocks()
 
@@ -97,14 +119,15 @@ class SilencesManager:
             creator = state_values["silence_creator_block"]["creator_input"]["value"]
             description = state_values["silence_description_block"]["description_input"]["value"]
             # labels = state_values["silence_labels_block"]["labels_input"]["value"]  # type이 plain_text_input일 때 사용
-            labels = state_values["silence_labels_block"]["label_multi_static_select_action"]["selected_options"]  # type이 multi_static_select일 때 사용
+            labels = state_values["silence_labels_block"]["label_multi_static_select_action"][
+                "selected_options"]  # type이 multi_static_select일 때 사용
 
             end_time = datetime.fromtimestamp(dt, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
             start_time = datetime.now(tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
 
             body = {
                 # "matchers": self.make_matchers(labels), # type이 plain_text_input일 때 사용
-                "matchers": self.make_matchers_from_options(labels), # type이 multi_static_select일 때 사용
+                "matchers": self.make_matchers_from_options(labels),  # type이 multi_static_select일 때 사용
                 "startsAt": start_time,
                 "endsAt": end_time,
                 "createdBy": creator,
@@ -116,10 +139,10 @@ class SilencesManager:
 
             alertmanager_api.post_silences(body)
         except KeyError as e:
-            logging.error(f"[Create Silence Error] - No have key: {e.args[0]}")
+            logging.error(f"[Create Silence] - No have key: {e.args[0]}")
             return f"❌ Silence 설정 처리 중 오류가 발생했습니다: KeyError"
         except Exception as e:
-            logging.error(f"[Create Silence Error] - {traceback.format_exc()}")
+            logging.error(f"[Create Silence] - {traceback.format_exc()}")
             return f"❌ Silence 설정 처리 중 오류가 발생했습니다: \n{str(e)}"
 
         return "✅ Silence 설정이 성공적으로 처리되었습니다."
