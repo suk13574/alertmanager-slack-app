@@ -47,31 +47,12 @@ class AlertmanagerAPI(CommonAPI):
             return False
         return True
 
-    def _request(self, verb, url, body={}):
+    def _request(self, verb, url, body=None, header=None, **kwargs):
         if not self._is_initialized():
             logging.error("[Alertmanager API] - Alertmanager API is not initialized")
             raise AlertmanagerNotInitializedError
 
-        logging.info(f"[Request Alertmanager] URL: {url}, verb: {verb}")
-
-        try:
-            if verb == "get":
-                res = requests.get(url, verify=False)
-            elif verb == "post":
-                headers = {"Content-Type": "application/json"}
-
-                res = requests.post(url, headers=headers, json=body)
-            else:
-                raise ValueError(f"[Alertmanager API] - Verb is not correct. verb: {verb}")
-
-            if res.status_code >= 400:
-                logging.error(f"[Alertmanger API] - request url: {url}, http status code: {res.status_code}, body: {res.json()}")
-                raise requests.HTTPError(f"[Alertmanger API] - http status code: {res.status_code}, body: {res.json()}")
-            else:
-                return res.json()
-        except requests.exceptions.SSLError as e:
-            logging.warning(f"[Alertmanager API] - request url: {url}, error message: {e}")
-            return self.session_request(verb, url, body).json()
+        return super()._request(verb, url, body, header, logging_instance_name="Alertmanager API")
 
     def get_alerts(self):
         verb = "get"
@@ -80,7 +61,7 @@ class AlertmanagerAPI(CommonAPI):
 
         queries = "?silenced=false"
 
-        return self._request(verb, url + queries)
+        return self._request(verb, url + queries).json()
 
     def get_silences(self):
         verb = "get"
@@ -89,11 +70,11 @@ class AlertmanagerAPI(CommonAPI):
 
         queries = "?active=true"
 
-        return self._request(verb, url + queries)
+        return self._request(verb, url + queries).json()
 
     def post_silences(self, body):
         verb = "post"
         path = "/api/v2/silences"
         url = f"{self.endpoint}{path}"
 
-        return self._request(verb, url, body)
+        return self._request(verb, url, body).json()

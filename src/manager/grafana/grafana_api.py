@@ -50,33 +50,16 @@ class GrafanaAPI(CommonAPI):
             return False
         return True
 
-    def _request(self, verb, url, body={}, header={}):
+    def _request(self, verb, url, body=None, header=None, **kwargs):
         if not self._is_initialized():
             logging.error("[Grafana API] - Grafana API is not initialized")
             raise GrafanaNotInitializedError
 
+        if header is None:
+            header = {}
         header["Authorization"] = f"Bearer {self.token}"
         header.setdefault("Content-Type", "application/json")
-
-        logging.info(f"[Request Grafana API] - verb: {verb}, url: {url}")
-
-        try:
-            if verb == "get":
-                res = requests.get(url, verify=False, headers=header)
-            elif verb == "post":
-                res = requests.post(url, headers=header, json=body)
-            else:
-                raise ValueError(f"[Grafana API] - Verb is not correct. verb: {verb}")
-
-            if res.status_code >= 400:
-                logging.error(
-                    f"[Grafana API] - request url: {url}, http status code: {res.status_code}, body: {res.text}")
-                raise requests.HTTPError(f"[Grafana API] - http status code: {res.status_code}, body: {res.text}")
-            else:
-                return res
-        except requests.exceptions.SSLError as e:
-            logging.warning(f"[Grafana API] - request url: {url}, error message: {e}")
-            return self.session_request(verb, url, body, header)
+        return super()._request(verb, url, body, header, logging_instance_name="Grafana API")
 
     def list_dash_folder(self):
         verb = "get"

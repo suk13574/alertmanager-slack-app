@@ -11,6 +11,33 @@ class CommonAPI:
     def __init__(self):
         pass
 
+    def _request(self, verb, url, body=None, header=None, **kwargs):
+        logging_instance_name = kwargs.get("logging_instance_name", "API")
+
+        if body is None:
+            body = {}
+        if header is None:
+            header = {}
+
+        try:
+            logging.info(f"[{logging_instance_name}] - verb:, {verb}, request url: {url}")
+            if verb == "get":
+                res = requests.get(url, headers=header)
+            elif verb == "post":
+                res = requests.post(url, headers=header, json=body)
+            else:
+                raise ValueError(f"[{logging_instance_name}] - Verb is not correct. verb: {verb}")
+
+            if res.status_code >= 400:
+                logging.error(
+                    f"[logging_instance_name] - request url: {url}, http status code: {res.status_code}, body: {res.text}")
+                raise requests.HTTPError(f"[{logging_instance_name}] - http status code: {res.status_code}, body: {res.text}")
+            else:
+                return res
+        except requests.exceptions.SSLError as e:
+            logging.warning(f"[{logging_instance_name}] - request url: {url}, error message: {e}")
+            return self.session_request(verb, url, body, header)
+
     def get_tls_info_openssl(self, host):
         """ host의 TLS 프로토콜, TLS 버전을 반환 """
         protocol = None
