@@ -3,13 +3,15 @@ import logging
 import requests
 
 from app.errors.alertmanager_not_initialized_error import AlertmanagerNotInitializedError
+from src.manager.common.common_api import CommonAPI
 
 
-class AlertmanagerAPI:
+class AlertmanagerAPI(CommonAPI):
     def __init__(self):
         self.alertmanager_urls = {}
         self.endpoint = None
         self.endpoint_key = None
+        super().__init__()
 
     def init_alertmanager_urls(self, alertmanager_urls):
         self.alertmanager_urls = alertmanager_urls
@@ -47,7 +49,7 @@ class AlertmanagerAPI:
 
     def _request(self, verb, url, body={}):
         if not self._is_initialized():
-            logging.error("[Alertmanager API Error] - Alertmanager API is not initialized")
+            logging.error("[Alertmanager API] - Alertmanager API is not initialized")
             raise AlertmanagerNotInitializedError
 
         logging.info(f"[Request Alertmanager] URL: {url}, verb: {verb}")
@@ -60,16 +62,16 @@ class AlertmanagerAPI:
 
                 res = requests.post(url, headers=headers, json=body)
             else:
-                raise SyntaxError("[Alertmanager API Error] - Verb is not correct. verb: {verb}")
+                raise ValueError(f"[Alertmanager API] - Verb is not correct. verb: {verb}")
 
             if res.status_code >= 400:
-                logging.error(f"[Alertmanger API Error] - request url: {url}, http status code: {res.status_code}, body: {res.json()}")
-                raise requests.HTTPError(f"[Alertmanger API Error] - http status code: {res.status_code}, body: {res.json()}")
+                logging.error(f"[Alertmanger API] - request url: {url}, http status code: {res.status_code}, body: {res.json()}")
+                raise requests.HTTPError(f"[Alertmanger API] - http status code: {res.status_code}, body: {res.json()}")
             else:
                 return res.json()
         except requests.exceptions.SSLError as e:
-            logging.error(f"[Grafana API SSL Error] - request url: {url}, error message: {e}")
-            raise requests.exceptions.SSLError
+            logging.warning(f"[Alertmanager API] - request url: {url}, error message: {e}")
+            return self.session_request(verb, url, body).json()
 
     def get_alerts(self):
         verb = "get"

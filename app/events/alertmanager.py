@@ -28,9 +28,9 @@ def silences(ack, body, client):
             client.views_push(trigger_id=trigger_id, view=view)
 
         except SlackApiError as e:
-            logging.error(f"[Slack command error] - /overview: {e}")
+            logging.error(f"[Slack command] - /overview: {e}")
         except Exception as e:
-            logging.error(f"[Slack action error] - silence_button: {traceback.format_exc()}")
+            logging.error(f"[Slack action] - silence_button: {traceback.format_exc()}")
 
 
 @slack_app.view("silence_modal")
@@ -42,8 +42,8 @@ def submit_silence(ack, client, context, view):
         client.chat_postMessage(channel=context["default_channel"], text=message)
 
     except SlackApiError as e:
-        logging.error(f"[Slack command error] - /overview: {e}")
+        logging.error(f"[Slack command] - /overview: {e}")
     except Exception as e:
-        logging.error(f"[Slack submit error] silence_modal: {traceback.format_exc()}")
+        logging.error(f"[Slack submit] silence_modal: {traceback.format_exc()}")
 
 

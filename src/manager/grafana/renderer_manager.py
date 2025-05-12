@@ -108,7 +108,7 @@ class RendererManager:
                         query_var_blocks.append(block)
 
                 except Exception as e:
-                    logging.error(f"[Grafana query error] - {e}")
+                    logging.error(f"[Grafana query] - {e}")
                     query_var_blocks.append(block)
             else:
                 required_blocks.append(block["block_id"])
@@ -437,9 +437,9 @@ class RendererManager:
 
             return True, res.content
         except KeyError as e:
-            logging.error(f"[Grafana panel image rendering error] - No have key: {e.args[0]}")
+            logging.error(f"[Grafana panel image rendering] - No have key: {e.args[0]}")
         except Exception as e:
-            logging.error(f"[Grafana panel image rendering error] - {traceback.format_exc()}")
+            logging.error(f"[Grafana panel image rendering] - {traceback.format_exc()}")
             return False, f"❌ grafana dashboard image 생성 중 오류가 발생했습니다. 로그를 확인해주세요."
 
     @staticmethod
@@ -500,7 +500,7 @@ class RendererManager:
         res = grafana_api.query_label_value(ds_uid, query)
 
         if res.get("status") != "success":
-            logging.error(f"[Grafana API Error] - Error getting query label, ds_uid={ds_uid}, query={query}"
+            logging.error(f"[Grafana API] - Error getting query label, ds_uid={ds_uid}, query={query}"
                           f"\n {traceback.format_exc()}")
             raise Exception
 

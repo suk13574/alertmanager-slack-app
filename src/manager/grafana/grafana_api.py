@@ -4,14 +4,17 @@ from functools import lru_cache
 import requests
 
 from app.errors.grafana_not_initialized_error import GrafanaNotInitializedError
+from src.manager.common.common_api import CommonAPI
 
 
-class GrafanaAPI:
+class GrafanaAPI(CommonAPI):
     def __init__(self):
         self.grafana_urls = {}
         self.endpoint = None
         self.endpoint_key = None
         self.token = None
+
+        super().__init__()
 
     def init_grafana(self, grafana_urls):
         self.grafana_urls = grafana_urls
@@ -49,7 +52,7 @@ class GrafanaAPI:
 
     def _request(self, verb, url, body={}, header={}):
         if not self._is_initialized():
-            logging.error("[Grafana API Error] - Grafana API is not initialized")
+            logging.error("[Grafana API] - Grafana API is not initialized")
             raise GrafanaNotInitializedError
 
         header["Authorization"] = f"Bearer {self.token}"
@@ -63,17 +66,17 @@ class GrafanaAPI:
             elif verb == "post":
                 res = requests.post(url, headers=header, json=body)
             else:
-                raise SyntaxError(f"[Grafana API Error] - Verb is not correct. verb: {verb}")
+                raise ValueError(f"[Grafana API] - Verb is not correct. verb: {verb}")
 
             if res.status_code >= 400:
                 logging.error(
-                    f"[Grafana API Error] - request url: {url}, http status code: {res.status_code}, body: {res.text}")
-                raise requests.HTTPError(f"[Grafana API Error] - http status code: {res.status_code}, body: {res.text}")
+                    f"[Grafana API] - request url: {url}, http status code: {res.status_code}, body: {res.text}")
+                raise requests.HTTPError(f"[Grafana API] - http status code: {res.status_code}, body: {res.text}")
             else:
                 return res
         except requests.exceptions.SSLError as e:
-            logging.error(f"[Grafana API SSL Error] - request url: {url}, error message: {e}")
-            raise requests.HTTPError(f"[Grafana API SSL Error] - {e}")
+            logging.warning(f"[Grafana API] - request url: {url}, error message: {e}")
+            return self.session_request(verb, url, body, header)
 
     def list_dash_folder(self):
         verb = "get"

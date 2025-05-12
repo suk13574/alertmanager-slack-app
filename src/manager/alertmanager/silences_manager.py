@@ -116,10 +116,10 @@ class SilencesManager:
 
             alertmanager_api.post_silences(body)
         except KeyError as e:
-            logging.error(f"[Create Silence Error] - No have key: {e.args[0]}")
+            logging.error(f"[Create Silence] - No have key: {e.args[0]}")
             return f"❌ Silence 설정 처리 중 오류가 발생했습니다: KeyError"
         except Exception as e:
-            logging.error(f"[Create Silence Error] - {traceback.format_exc()}")
+            logging.error(f"[Create Silence] - {traceback.format_exc()}")
             return f"❌ Silence 설정 처리 중 오류가 발생했습니다: \n{str(e)}"
 
         return "✅ Silence 설정이 성공적으로 처리되었습니다."
