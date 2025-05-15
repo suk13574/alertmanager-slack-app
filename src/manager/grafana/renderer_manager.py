@@ -263,18 +263,26 @@ class RendererManager:
     @staticmethod
     def make_block_dashboard(title: str, folder_id: str) -> list[dict]:
         def parse_url(dashboard_url: str) -> str:
-            url_split = dashboard_url.split("/d")
-            return str(url_split[-1])
+            match = re.search(r'/d/(.+)', dashboard_url)
+            if match:
+                result = "/" + match.group(1)
+                return result
+            else:
+                logging.warning(f"[Grafana] /d/ path not found in dashboard_url: {dashboard_url}")
+                return ""
 
         res = grafana_api.list_dash_in_folder(int(folder_id))
-        options = [{
-            "text": {
-                "type": "plain_text",
-                "text": dashboard["title"],
-            },
-            # "value": str(dashboard["url"])
-            "value": parse_url(parse_url(dashboard["url"]))
-        } for dashboard in res]
+        options = []
+        for dashboard in res:
+            dashboard_url = parse_url(dashboard["url"])
+            if dashboard_url:
+                options.append({
+                    "text": {
+                        "type": "plain_text",
+                        "text": dashboard["title"],
+                    },
+                    "value": dashboard_url
+                })
 
         blocks = []
         if options:
