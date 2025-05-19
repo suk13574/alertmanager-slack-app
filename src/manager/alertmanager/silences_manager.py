@@ -107,7 +107,7 @@ class SilencesManager:
             # is_equal = matcher["isEqual"]
             # is_regex = matcher["isRegex"]
 
-            label_str += f"`{key}:{value}`\n"
+            label_str += f"`{key}={value}`\n"
         return label_str
 
     def create_silence(self, view: dict) -> str:
@@ -277,7 +277,7 @@ class SilencesManager:
             label_info = label["value"].split("=", 1)
             matchers.append({
                 "name": label_info[0],
-                "value": label_info[1],
+                "value": SilencesManager.clean_slack_url(label_info[1]),
                 "isRegex": False,
                 "isEqual": True
             })
@@ -314,8 +314,16 @@ class SilencesManager:
         else:
             return False, initial_values
 
-    def init_labels(self, labels: str):
-        label_list = [label.replace(":", "=", 1) for label in labels.replace("`", "").split("\n")]
+    @staticmethod
+    def init_labels(labels: str):
+        # label_list = [label for label in labels.replace("`", "").split("\n")]
+        label_list = []
+        for label in labels.replace("`", "").split("\n"):
+            label_info = label.split("=")
+            if len(label_info) == 2:
+                label_list.append(f"{label_info[0]}={SilencesManager.clean_slack_url(label_info[1])}")
+            elif len(label) != 0:
+                logging.warning(f"[Alertmanager] - Invalid label format: {label}")
 
         options = [{
             "text": {
@@ -326,3 +334,9 @@ class SilencesManager:
         } for label in label_list if label.strip()]
 
         return options
+
+    @staticmethod
+    def clean_slack_url(url: str) -> str:
+        if url.startswith("<") and url.endswith(">"):
+            url = url[1:-1]
+        return url
