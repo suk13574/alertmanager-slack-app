@@ -21,7 +21,7 @@ class AlertsManager:
 
     @staticmethod
     def make_block_alert(labels: dict, fingerprint: str) -> dict:
-        label_str = [f"`{key}:{value}`\n" for key, value in labels.items()]
+        label_str = [f"`{key}={value}`\n" for key, value in labels.items()]
 
         return {
             "type": "section",
