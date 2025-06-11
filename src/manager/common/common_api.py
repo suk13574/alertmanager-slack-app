@@ -20,7 +20,7 @@ class CommonAPI:
             header = {}
 
         try:
-            logging.info(f"[{logging_instance_name}] - verb:, {verb}, request url: {url}")
+            logging.info(f"[{logging_instance_name}] - verb: {verb}, request url: {url}")
             if verb == "get":
                 res = requests.get(url, headers=header)
             elif verb == "post":
