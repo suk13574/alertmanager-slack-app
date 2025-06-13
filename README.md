@@ -18,7 +18,7 @@ slack bot이 배포된 서버는 outbound가 열려있고, outbound로 인터넷
 ## 🖼️ How to use
 
 1. [Slack 채널 및 Bot 생성](https://api.slack.com/apps)
-2. [Install Slack bot - AlertaGra](##-Install)
+2. [Install Slack bot - AlertaGra](#-install)
 3. Slack Bot 관리 페이지에서 `/overview` command 생성
 4. Slack 채널에 `/overview` 입력하여 사용
 
